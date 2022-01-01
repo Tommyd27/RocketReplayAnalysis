@@ -12,7 +12,7 @@ debugMode = False
 databaseFolder = r"d:\\Users\\tom\Documents\\Visual Studio Code\\Python Files\\RocketReplayAnalysis\\Database\\"
 databaseName = r"replayDatabase.db"
 
-replayFolder = r"C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\\"
+replayFolder = r"C:\\Usergit s\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\\"
 #replayFolder = r"d:\\Users\\tom\\Documents\\My Games\\Rocket League\\TAGame\\Demos\\"
 processedReplayFolder = r"d:\\Users\\tom\\Documents\\My Games\\Rocket League\\TAGame\\Demos\\processedReplays\\"
 errorFolder = r"d:\\Users\\tom\\Documents\\My Games\\Rocket League\\TAGame\\Demos\\processedReplays\\error replays\\"
