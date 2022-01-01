@@ -3,6 +3,7 @@ from sqlite3.dbapi2 import Error
 import tkinter as tk
 
 from tkinter import ttk
+import tkinter
 from typing import List, Type
 
 class AnalysisNode:
@@ -426,5 +427,11 @@ class ReplayAnalysis:
                     node.cR = 0
         return analyseNode
         
+class ReplayGUI:
+    def __init__(s) -> None:
+        s.w = tkinter.Tk()
+        s.w.title("Rocket Replay Analysis")
+        s.w.geometry("600x400")
+        s.w.mainloop()
 
 gui = ReplayGUI()
