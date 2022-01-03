@@ -432,6 +432,40 @@ class ReplayGUI:
         s.w = tkinter.Tk()
         s.w.title("Rocket Replay Analysis")
         s.w.geometry("600x400")
+
+        s.tagsEntry = tk.Entry(s.w)
+        s.tagsEntry.insert(0, "Enter Tags")
+        s.tagsEntry.grid(row = 0, column = 0)
+
+        s.tagsButton = tk.Button(s.w, text = "Enter", command = s.EnterTags)
+        s.tagsButton.grid(row = 0, column = 1)
+
         s.w.mainloop()
+
+    def EnterTags(s):
+        tags = s.tagsEntry.get()
+        if tags not in [None, ""]:
+            tags = tags.split(",")
+        else:
+            tags = None
+        s.analysisEngine = ReplayAnalysis(tagsToLoad = tags)
+
+        s.tagsEntry.delete()
+        s.tagsButton.delete()
+        
+        s.CreateGameEntryWindow()
+    
+    def CreateGameEntryWindow(s):
+        s.idEntry = tk.Entry(s.w)
+        s.idEntry.insert(0, "Enter Id(s)")
+        s.idEntry.grid(row = 0, column = 0)
+
+        s.idButton = tk.Button(s.w, text = "Enter", command = s.EnterIds)
+        s.idButton.grid(row = 0, column = 1)
+
+
+    def EnterIDs(s):
+        gameIDs = s.idEntry.get()
+        gameIDs = [int(x) for x in gameIDs.split(",")]
 
 gui = ReplayGUI()
