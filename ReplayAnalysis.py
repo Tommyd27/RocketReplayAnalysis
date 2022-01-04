@@ -318,6 +318,22 @@ class ReplayAnalysis:
         self.conn = sqlite3.connect(dbFile)
         self.c = self.conn.cursor()
         print(f"SQLite3 Version: {sqlite3.version}")
+    def GetReplay(self, replayID):
+        if replayID < 0:
+            executeSTR = f"SELECT replayID FROM matchTable ORDER BY replayID DESC;"
+            self.c.execute(executeSTR)
+            replayID *= -1
+            replayID = self.c.fetchmany(replayID)[replayID - 1][0]
+        executeSTR = f"SELECT {', '.join(Match.retrievalNodes)} from matchTable WHERE matchID = {replayID}"
+        self.c.execute(executeSTR)
+        matchDetails = self.c.fetchone()
+
+        executeSTR = f"SELECT {', '.join(Match.retrievalNodes)} from playerMatchTable WHERE matchID = {replayID}"
+        self.c.execute(executeSTR)
+
+        players = [x for x in self.c.fetchall()]
+
+        return Match(matchDetails), [Player(x) for x in players]
     def LoadReplays(self, tagsToLoad = None, num = -1, loadTeams = True):
         tagsSTR = ""
         if tagsToLoad:
@@ -426,7 +442,10 @@ class ReplayAnalysis:
                     node.rR = 0
                     node.cR = 0
         return analyseNode
-        
+    def AnalyseReplay(self, replayID):
+        executeSTR = f"SELECT * FROM matchTable WHERE matchID = {replayID}"
+        executePlayerSTR = f"SELECT * FROM matchTable WHERE matchID = {replayID}"
+
 class ReplayGUI:
     def __init__(s) -> None:
         s.w = tkinter.Tk()
@@ -467,5 +486,26 @@ class ReplayGUI:
     def EnterIDs(s):
         gameIDs = s.idEntry.get()
         gameIDs = [int(x) for x in gameIDs.split(",")]
+
+        if len(gameIDs) == 1:
+            match, players = s.analysisEngine.GetReplay(gameIDs[0])
+            teams = [[x for x in players if x.pList[8] == "orange"], [x for x in players if x.pList[8] == "blue"]]
+            matchAnalysed = s.analysisEngine.AnalyseNode(match, "matches")
+            playersAnalysed = []
+            for player in players:
+                playersAnalysed.append(s.analysisEngine(player, "players"))
+            teamsAnalysed = []
+            for team in teams:
+                teamsAnalysed.append(s.analysisEngine(team, "teams"))
+            
+            matchNodes = [x for x in matchAnalysed.nodes.values()]
+            matchNodes.sort(reverse = True, key = lambda x : abs(x.cV))
+
+            playersNodes = [[x for x in y.nodes.values()] for y in playersAnalysed]
+            playersNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cV)) for x in playersNodes]
+
+            teamsNodes = [[x for x in y.nodes.values()] for y in teamsAnalysed]
+            teamsNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cV)) for x in teamsNodes]
+
 
 gui = ReplayGUI()
