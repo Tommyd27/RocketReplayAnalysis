@@ -315,6 +315,7 @@ class ReplayAnalysis:
         if loadReplays:
             self.LoadReplays(tagsToLoad)
     def CreateConnection(self, dbFile):
+        print(f"Connected to {dbFile}")
         self.conn = sqlite3.connect(dbFile)
         self.c = self.conn.cursor()
         print(f"SQLite3 Version: {sqlite3.version}")
@@ -325,6 +326,7 @@ class ReplayAnalysis:
             replayID *= -1
             replayID = self.c.fetchmany(replayID)[replayID - 1][0]
         executeSTR = f"SELECT {', '.join(Match.retrievalNodes)} from matchTable WHERE matchID = {replayID}"
+        print(executeSTR)
         self.c.execute(executeSTR)
         matchDetails = self.c.fetchone()
 
@@ -463,14 +465,14 @@ class ReplayGUI:
 
     def EnterTags(s):
         tags = s.tagsEntry.get()
-        if tags not in [None, ""]:
+        if tags != "Enter Tags":
             tags = tags.split(",")
         else:
             tags = None
         s.analysisEngine = ReplayAnalysis(tagsToLoad = tags)
 
-        s.tagsEntry.delete()
-        s.tagsButton.delete()
+        s.tagsEntry.destroy()
+        s.tagsButton.destroy()
         
         s.CreateGameEntryWindow()
     
@@ -479,13 +481,14 @@ class ReplayGUI:
         s.idEntry.insert(0, "Enter Id(s)")
         s.idEntry.grid(row = 0, column = 0)
 
-        s.idButton = tk.Button(s.w, text = "Enter", command = s.EnterIds)
+        s.idButton = tk.Button(s.w, text = "Enter", command = s.EnterIDs)
         s.idButton.grid(row = 0, column = 1)
 
 
     def EnterIDs(s):
         gameIDs = s.idEntry.get()
         gameIDs = [int(x) for x in gameIDs.split(",")]
+        analysisType = "top"
 
         if len(gameIDs) == 1:
             match, players = s.analysisEngine.GetReplay(gameIDs[0])
@@ -506,8 +509,8 @@ class ReplayGUI:
 
             teamsNodes = [[x for x in y.nodes.values()] for y in teamsAnalysed]
             teamsNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cV)) for x in teamsNodes]
-        s.GenerateAnalysedNodesGUI(matchNodes, playersNodes, teamsNodes)
-    def GenerateAnalysedNodesGUI(s, mNodes, pNodes, tNodes):
+        s.GenerateAnalysedNodesGUI(matchNodes, playersNodes, teamsNodes, analysisType)
+    def GenerateAnalysedNodesGUI(s, mNodes, pNodes, tNodes, aType):
         s.DeleteIDEntries()
 
         s.tabParent = ttk.Notebook(s.w)
@@ -518,13 +521,23 @@ class ReplayGUI:
 
         s.teamTabs = [ttk.Frame(s.tabParent) for _ in range(len(tNodes))]
 
-        s.matchTree = ttk.Treeview(s.matchTab, columns = )
+        analysisNodeColumnsIDs = ("name", "tag", "relevancy", "accountForDuplicates", "punishDuplicate", "teamStat",
+                               "rawValue", "value", "rawRelevancy", "calculatedRelevancy")
+        analysisNodeColumnsName = ("Name", "Tag", "Relevancy", "Account for Duplicates", "Punish Duplicate", "Team Stat",
+                               "Raw Value", "Value", "Raw Relevancy", "Calculated Relevancy")
+        
+        s.matchTree = ttk.Treeview(s.matchTab, columns = analysisNodeColumnsIDs)
 
-
+        for i in range(len(analysisNodeColumnsIDs)):
+            s.matchTree.heading(analysisNodeColumnsIDs[i], text = analysisNodeColumnsName[i])
+        for node in mNodes:
+            node : AnalysisNode
+            values = (node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.pD, node.rV, node.v, node.rR, node.cR)
+            s.matchTree.insert("", tk.END, values = values)
 
     def DeleteIDEntries(s):
-        s.idEntry.delete()
-        s.idButton.delete()
+        s.idEntry.destroy()
+        s.idButton.destroy()
 
 
 gui = ReplayGUI()
