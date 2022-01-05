@@ -506,6 +506,25 @@ class ReplayGUI:
 
             teamsNodes = [[x for x in y.nodes.values()] for y in teamsAnalysed]
             teamsNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cV)) for x in teamsNodes]
+        s.GenerateAnalysedNodesGUI(matchNodes, playersNodes, teamsNodes)
+    def GenerateAnalysedNodesGUI(s, mNodes, pNodes, tNodes):
+        s.DeleteIDEntries()
+
+        s.tabParent = ttk.Notebook(s.w)
+
+        s.matchTab = ttk.Frame(s.tabParent)
+
+        s.playerTabs = [ttk.Frame(s.tabParent) for _ in range(len(pNodes))]
+
+        s.teamTabs = [ttk.Frame(s.tabParent) for _ in range(len(tNodes))]
+
+        s.matchTree = ttk.Treeview(s.matchTab, columns = )
+
+
+
+    def DeleteIDEntries(s):
+        s.idEntry.delete()
+        s.idButton.delete()
 
 
 gui = ReplayGUI()
