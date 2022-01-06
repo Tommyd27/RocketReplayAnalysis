@@ -197,7 +197,7 @@ class Player:
                         case "teamGoals":
                             teamGoalsIndex = 9 if playerList[8] == "blue" else 10
                             divValue = matchList[teamGoalsIndex]
-                node.v = node.rV / (divValue if divValue > 0 else 1)
+                node.v = node.rV / (divValue if isinstance(divValue, (int, float)) and divValue > 0 else 1)
             else:
                 try:
                     node.v = node.rV
@@ -295,10 +295,11 @@ class Match:
             node.rV = matchList[node.i]
             if node.p:
                 divValue = matchList[Match.retrievalNodes.index(node.p)]
-                node.v = node.rV / (divValue if divValue > 0 else 1)
+                node.v = node.rV / (divValue if isinstance(divValue, (int, float)) and divValue > 0 else 1)
             else:
                 node.v = node.rV
             if node.default != -1 and node.v == -1:
+                print("Updating to default")
                 node.v = node.default   
             self.nodes[node.n] = node
     def __repr__(self) -> str:
@@ -309,7 +310,7 @@ class Match:
 
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, tagsToLoad = None):
-        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
         if loadReplays:
@@ -326,16 +327,15 @@ class ReplayAnalysis:
             replayID *= -1
             replayID = self.c.fetchmany(replayID)[replayID - 1][0]
         executeSTR = f"SELECT {', '.join(Match.retrievalNodes)} from matchTable WHERE matchID = {replayID}"
-        print(executeSTR)
         self.c.execute(executeSTR)
         matchDetails = self.c.fetchone()
 
-        executeSTR = f"SELECT {', '.join(Match.retrievalNodes)} from playerMatchTable WHERE matchID = {replayID}"
+        executeSTR = f"SELECT {', '.join(Player.retrievalNodes)} from playerMatchTable WHERE matchID = {replayID}"
         self.c.execute(executeSTR)
 
         players = [x for x in self.c.fetchall()]
 
-        return Match(matchDetails), [Player(x) for x in players]
+        return Match(matchDetails), [Player(x, matchDetails) for x in players]
     def LoadReplays(self, tagsToLoad = None, num = -1, loadTeams = True):
         tagsSTR = ""
         if tagsToLoad:
@@ -380,6 +380,11 @@ class ReplayAnalysis:
                     self.teams.append(players["blue"])
                 except KeyError:
                     pass
+        for i, match in enumerate(self.matches):
+            if match.nodes["overtime"].v != -1:
+                print(match.nodes["overtime"].v)
+        for match in matchLists:
+            print(match[7])
     def AnalyseNode(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
         #type : top%, average
         nodesList = self.__dict__[nodesList]
@@ -392,57 +397,61 @@ class ReplayAnalysis:
         for i, tag in enumerate(matchTags):
             nodesList = [x for x in nodesList if x.mL[-6 + i] == tag]
         for node in analyseNode.nodes.values():
-            match node.aT:
-                case 0:
-                    nodesAll = [xPlayer.nodes[node.n].v for xPlayer in nodesList if xPlayer.nodes[node.n].v not in [-1, "NaN"]]
-                    if aType == "top":
-                        nodesListInsert = nodesAll
-                        nodesListInsert.append(node.v)
-                        try:
-                            nodesListInsert.sort()
-                        except TypeError as e:
-                            print(node.n)
-                            print(nodesListInsert)
-                            raise e
+            if node.v in [-1]:
+                node.rR = 0
+                node.cR = 0
+            else:
+                match node.aT:
+                    case 0:
+                        nodesAll = [xPlayer.nodes[node.n].v for xPlayer in nodesList if xPlayer.nodes[node.n].v not in [-1, "NaN"]]
+                        if aType == "top":
+                            nodesListInsert = nodesAll
+                            nodesListInsert.append(node.v)
+                            try:
+                                nodesListInsert.sort()
+                            except TypeError as e:
+                                print(node.n)
+                                print(nodesListInsert)
+                                raise e
 
-                        valueIndex = nodesListInsert.index(node.v)
-                        listLength = len(nodesListInsert)
+                            valueIndex = nodesListInsert.index(node.v)
+                            listLength = len(nodesListInsert)
 
-                        node.rR = valueIndex / (listLength - 1)
-                        node.cR = node.rV
-                        node.cR -= 0.5
-                        if node.aFD:
-                            node.cR += nodesListInsert.count(node.v) / (listLength - 1)
-                        if node.pD:
-                            node.cR *= float(node.pD) * (1 - nodesListInsert.count(node.v) / listLength)
-                        if valueIndex < extraTopRelevance or listLength - extraTopRelevance <= valueIndex:
-                            node.cR *= 1.1 + min(valueIndex, listLength - valueIndex - 1) * 0.02
+                            node.rR = valueIndex / (listLength - 1)
+                            node.cR = node.rV
+                            node.cR -= 0.5
+                            if node.aFD:
+                                node.cR += nodesListInsert.count(node.v) / (listLength - 1)
+                            if node.pD:
+                                node.cR *= float(node.pD) * (1 - nodesListInsert.count(node.v) / listLength)
+                            if valueIndex < extraTopRelevance or listLength - extraTopRelevance <= valueIndex:
+                                node.cR *= 1.1 + min(valueIndex, listLength - valueIndex - 1) * 0.02
 
-                        node.cR *= 2
-                        if "top" in node.r:
-                            node.cR *= node.r["top"]
+                            node.cR *= 2
+                            if "top" in node.r:
+                                node.cR *= node.r["top"]
 
-                    elif aType == "average":
-                        nodesAverage = sum(nodesAll) / len(nodesAll)
+                        elif aType == "average":
+                            nodesAverage = sum(nodesAll) / len(nodesAll)
 
-                        node.rR = node.v / nodesAverage
-                        node.cR = node.rR
-                        node.cR -= 1
+                            node.rR = node.v / nodesAverage
+                            node.cR = node.rR
+                            node.cR -= 1
 
-                        if node.v > max(nodesAll) or node.v < min(nodesAll):
-                            node.cR *= 1.2
-                        if "average" in node.r:
-                            node.cR *= node.r["average"]
-                        
-
-
+                            if node.v > max(nodesAll) or node.v < min(nodesAll):
+                                node.cR *= 1.2
+                            if "average" in node.r:
+                                node.cR *= node.r["average"]
+                            
 
 
-                    else:
-                        raise NotImplementedError(f"What type: {type}")
-                case _:
-                    node.rR = 0
-                    node.cR = 0
+
+
+                        else:
+                            raise NotImplementedError(f"What type: {type}")
+                    case _:
+                        node.rR = 0
+                        node.cR = 0
         return analyseNode
     def AnalyseReplay(self, replayID):
         executeSTR = f"SELECT * FROM matchTable WHERE matchID = {replayID}"
