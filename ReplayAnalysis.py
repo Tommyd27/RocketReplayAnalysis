@@ -291,7 +291,9 @@ class Match:
     def __init__(self, matchList) -> None:
         self.mL = matchList
         self.nodes = {}
-        for node in Match.analysisNodes:
+
+        analysisNodes = [x.copy() for x in Match.analysisNodes]
+        for node in analysisNodes:
             node.rV = matchList[node.i]
             if node.p:
                 divValue = matchList[Match.retrievalNodes.index(node.p)]
@@ -302,6 +304,9 @@ class Match:
                 print("Updating to default")
                 node.v = node.default   
             self.nodes[node.n] = node
+            if node.i == 7:
+                pass
+                #print(self.nodes["overtime"].v)
     def __repr__(self) -> str:
         output = ""
         for node in self.nodes:
@@ -356,6 +361,9 @@ class ReplayAnalysis:
 
         self.c.execute(f"SELECT {playerNodesToSelectSTR} FROM playerMatchTable WHERE matchID in {matchIDsSTR}")
         playerLists = self.c.fetchall()
+        self.matches = []
+        #for match in matchLists:
+        #    self.matches.append(Match(match))
         self.matches = [Match(x) for x in matchLists]
         self.matchesDict = {x.mL[0] : x for x in self.matches}
         #print(self.matchesDict)
@@ -380,11 +388,6 @@ class ReplayAnalysis:
                     self.teams.append(players["blue"])
                 except KeyError:
                     pass
-        for i, match in enumerate(self.matches):
-            if match.nodes["overtime"].v != -1:
-                print(match.nodes["overtime"].v)
-        for match in matchLists:
-            print(match[7])
     def AnalyseNode(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
         #type : top%, average
         nodesList = self.__dict__[nodesList]
