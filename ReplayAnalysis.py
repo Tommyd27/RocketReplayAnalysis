@@ -181,6 +181,9 @@ class Player:
                                 node.rV = playerList[0] == matchList[11][0]
                             except TypeError:
                                 node.rV = -1
+                            except IndexError:
+                                node.rV = -1
+                                print("Index Error with Goal Sequence")
                 else:
                     calcString : str = node.c[0]
                     variableList = [x.rV for x in self.nodes.values() if x.n in node.c[1:]]
@@ -218,47 +221,62 @@ class Team:
                     ]
 
     def __init__(self, players, matchList) -> None:
+        debugLen = len(players)
         self.players = players
         self.nodes = {}
         self.mL = matchList
-        for i, node in enumerate([x.copy for x in Player.analysisNodes if x.tS]):
+        playersValues = [list(x.nodes.values()) for x in players]
+        for i, node in enumerate([x.copy() for x in Player.analysisNodes]):
+            if not node.tS:
+                continue
             try:
-                playerSum = sum([x[i] for x in players])
+                playerSum = sum([x[i].v for x in playersValues if x[i].v not in [-1, None, "NaN"]])
                 node.v = playerSum / len(players)
-            except TypeError:
+            except TypeError as e:
                 match node.n:
                     case "scoredFirst":
-                        node.v = True in [x[i] for x in players]
-            
+                        node.v = True in [x[i] for x in playersValues]
+                    case _:
+                        print("Error")
+                        print(node.n)
+                        print(debugLen)
+                        print([x[i].v for x in playersValues if x[i].v not in [-1, None]])
+                        raise e
             self.nodes[node.n] = node
-        teamColour = players[0][8]
+        teamColour = players[0].pList[8]
 
         teamScore = matchList[9] if teamColour == "orange" else matchList[10]
         oppositionScore = matchList[10] if teamColour == "orange" else matchList[9]
-        teamPlayerIDs = [x[0] for x in players]
+        teamPlayerIDs = [x.pList[0] for x in players]
 
-        currentScores = [0]
         goalSequence = matchList[11]
-        for goal in goalSequence:
-            currentScore = currentScores[-1]
-            currentScore += 1 if goal in teamPlayerIDs else -1
-            currentScores.append(currentScores)
-        maxLeadNode = Team.analysisNodes[0].copy()
-        minLeadNode = Team.analysisNodes[1].copy()
-        finalLeadNode = Team.analysisNodes[2].copy()
-        comebackNode = Team.analysisNodes[3].copy()
-        chokeNode = Team.analysisNodes[5].copy()
-        if goalSequence not in [0, -1, "NULL", None]:
+        if goalSequence:
+            currentScores = [0]
+            for goal in goalSequence:
+                currentScore = currentScores[-1]
+                print(teamPlayerIDs)
+                print(goal)
+                currentScore += 1 if goal in teamPlayerIDs else -1
+                currentScores.append(currentScores)
+            maxLeadNode = Team.analysisNodes[0].copy()
+            minLeadNode = Team.analysisNodes[1].copy()
+            finalLeadNode = Team.analysisNodes[2].copy()
+            comebackNode = Team.analysisNodes[3].copy()
+            chokeNode = Team.analysisNodes[5].copy()
+
             maxLeadNode.rV = max(currentScores)
             minLeadNode.rV = min(currentScores)
             finalLeadNode.rV = currentScores[-1]
 
             comebackNode.rV = minLeadNode.rV if minLeadNode.rV < 0 and finalLeadNode.rV > 0 else 0
             chokeNode.rV = maxLeadNode.rV if maxLeadNode.rV > 1 and finalLeadNode.rV < 0 else 0
-        leadNodes = [maxLeadNode, minLeadNode, finalLeadNode, comebackNode, chokeNode]
-        for node in leadNodes:
-            node.v = node.rV
-            self.nodes[node.n] = node
+            leadNodes = [maxLeadNode, minLeadNode, finalLeadNode, comebackNode, chokeNode]
+            for node in leadNodes:
+                node.v = node.rV
+                self.nodes[node.n] = node
+        else:
+            for node in Team.analysisNodes:
+                self.nodes[node.n] = None
             
 class Match:
     allNodes = ["matchID", "gameID", "replayName", "ballchasingLink", "map", "matchType", 
@@ -362,11 +380,8 @@ class ReplayAnalysis:
         self.c.execute(f"SELECT {playerNodesToSelectSTR} FROM playerMatchTable WHERE matchID in {matchIDsSTR}")
         playerLists = self.c.fetchall()
         self.matches = []
-        #for match in matchLists:
-        #    self.matches.append(Match(match))
         self.matches = [Match(x) for x in matchLists]
         self.matchesDict = {x.mL[0] : x for x in self.matches}
-        #print(self.matchesDict)
         self.players = []
         for player in playerLists:
             self.players.append(Player(player, self.matchesDict[player[-1]].mL))
@@ -378,18 +393,23 @@ class ReplayAnalysis:
                 except KeyError:
                     self.teamsD[player.pList[-1]] = {}
                     self.teamsD[player.pList[-1]][player.pList[8]] = [player]
-            self.teams = []
+            self.teamsPlayers = []
             for players in self.teamsD.values():
                 try:
-                    self.teams.append(players["orange"])
+                    self.teamsPlayers.append(players["orange"])
                 except KeyError:
                     pass
                 try:
-                    self.teams.append(players["blue"])
+                    self.teamsPlayers.append(players["blue"])
                 except KeyError:
                     pass
+            self.teams = []
+            for team in self.teamsPlayers:
+                self.teams.append(Team(team, team[0].mL))
+
     def AnalyseNode(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
         #type : top%, average
+        debugNodesList = nodesList
         nodesList = self.__dict__[nodesList]
         matchTags = []
         if onlyTags == True:
@@ -399,6 +419,7 @@ class ReplayAnalysis:
         matchTags = [x for x in matchTags if x not in [0, None, "NULL"]]
         for i, tag in enumerate(matchTags):
             nodesList = [x for x in nodesList if x.mL[-6 + i] == tag]
+        pass
         for node in analyseNode.nodes.values():
             if node.v in [-1]:
                 node.rR = 0
@@ -406,7 +427,7 @@ class ReplayAnalysis:
             else:
                 match node.aT:
                     case 0:
-                        nodesAll = [xPlayer.nodes[node.n].v for xPlayer in nodesList if xPlayer.nodes[node.n].v not in [-1, "NaN"]]
+                        nodesAll = [xPlayer.nodes[node.n].v for xPlayer in nodesList if xPlayer.nodes[node.n].v not in [-1, "NaN", None]]
                         if aType == "top":
                             nodesListInsert = nodesAll
                             nodesListInsert.append(node.v)
@@ -508,10 +529,10 @@ class ReplayGUI:
             matchAnalysed = s.analysisEngine.AnalyseNode(match, "matches")
             playersAnalysed = []
             for player in players:
-                playersAnalysed.append(s.analysisEngine(player, "players"))
+                playersAnalysed.append(s.analysisEngine.AnalyseNode(player, "players"))
             teamsAnalysed = []
             for team in teams:
-                teamsAnalysed.append(s.analysisEngine(team, "teams"))
+                teamsAnalysed.append(s.analysisEngine.AnalyseNode(team, "teams"))
             
             matchNodes = [x for x in matchAnalysed.nodes.values()]
             matchNodes.sort(reverse = True, key = lambda x : abs(x.cV))
