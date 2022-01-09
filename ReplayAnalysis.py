@@ -183,7 +183,6 @@ class Player:
                                 node.rV = -1
                             except IndexError:
                                 node.rV = -1
-                                print("Index Error with Goal Sequence")
                 else:
                     calcString : str = node.c[0]
                     variableList = [x.rV for x in self.nodes.values() if x.n in node.c[1:]]
@@ -201,7 +200,9 @@ class Player:
                             teamGoalsIndex = 9 if playerList[8] == "blue" else 10
                             divValue = matchList[teamGoalsIndex]
                 node.v = node.rV / (divValue if isinstance(divValue, (int, float)) and divValue > 0 else 1)
+                node.dV = divValue
             else:
+                node.dV = False
                 try:
                     node.v = node.rV
                 except AttributeError as e:
@@ -277,8 +278,9 @@ class Team:
                 node.v = node.rV
                 self.nodes[node.n] = node
         else:
-            for node in Team.analysisNodes:
-                self.nodes[node.n] = None
+            pass
+            #for node in Team.analysisNodes:
+            #    self.nodes[node.n] = None
             
 class Match:
     allNodes = ["matchID", "gameID", "replayName", "ballchasingLink", "map", "matchType", 
@@ -318,8 +320,10 @@ class Match:
             if node.p:
                 divValue = matchList[Match.retrievalNodes.index(node.p)]
                 node.v = node.rV / (divValue if isinstance(divValue, (int, float)) and divValue > 0 else 1)
+                node.dV = divValue
             else:
                 node.v = node.rV
+                node.dV = False
             if node.default != -1 and node.v == -1:
                 print("Updating to default")
                 node.v = node.default   
@@ -335,8 +339,8 @@ class Match:
 
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, tagsToLoad = None):
-        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
         if loadReplays:
@@ -346,7 +350,7 @@ class ReplayAnalysis:
         self.conn = sqlite3.connect(dbFile)
         self.c = self.conn.cursor()
         print(f"SQLite3 Version: {sqlite3.version}")
-    def GetReplay(self, replayID):
+    def GetReplay(self, replayID, getTeams = True):
         if replayID < 0:
             executeSTR = f"SELECT replayID FROM matchTable ORDER BY replayID DESC;"
             self.c.execute(executeSTR)
@@ -360,8 +364,11 @@ class ReplayAnalysis:
         self.c.execute(executeSTR)
 
         players = [x for x in self.c.fetchall()]
-
-        return Match(matchDetails), [Player(x, matchDetails) for x in players]
+        if getTeams:
+            players = [Player(x, matchDetails) for x in players]
+            return Match(matchDetails), players, [Team([x for x in players if x.pList[8] == "blue"], matchDetails), Team([x for x in players if x.pList[8] == "orange"], matchDetails)]
+        else:
+            return Match(matchDetails), [Player(x, matchDetails) for x in players]
     def LoadReplays(self, tagsToLoad = None, num = -1, loadTeams = True):
         tagsSTR = ""
         if tagsToLoad:
@@ -409,7 +416,6 @@ class ReplayAnalysis:
             self.teams = []
             for team in self.teamsPlayers:
                 self.teams.append(Team(team, team[0].mL))
-
     def AnalyseNode(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
         #type : top%, average
         debugNodesList = nodesList
@@ -422,8 +428,9 @@ class ReplayAnalysis:
         matchTags = [x for x in matchTags if x not in [0, None, "NULL"]]
         for i, tag in enumerate(matchTags):
             nodesList = [x for x in nodesList if x.mL[-6 + i] == tag]
-        pass
         for node in analyseNode.nodes.values():
+            if not node:
+                del node
             if node.v in [-1]:
                 node.rR = 0
                 node.cR = 0
@@ -445,7 +452,7 @@ class ReplayAnalysis:
                             listLength = len(nodesListInsert)
 
                             node.rR = valueIndex / (listLength - 1)
-                            node.cR = node.rV
+                            node.cR = node.rR
                             node.cR -= 0.5
                             if node.aFD:
                                 node.cR += nodesListInsert.count(node.v) / (listLength - 1)
@@ -488,7 +495,7 @@ class ReplayGUI:
     def __init__(s) -> None:
         s.w = tkinter.Tk()
         s.w.title("Rocket Replay Analysis")
-        s.w.geometry("600x400")
+        s.w.geometry("1000x400")
 
         s.tagsEntry = tk.Entry(s.w)
         s.tagsEntry.insert(0, "Enter Tags")
@@ -527,8 +534,7 @@ class ReplayGUI:
         analysisType = "top"
 
         if len(gameIDs) == 1:
-            match, players = s.analysisEngine.GetReplay(gameIDs[0])
-            teams = [[x for x in players if x.pList[8] == "orange"], [x for x in players if x.pList[8] == "blue"]]
+            match, players, teams = s.analysisEngine.GetReplay(gameIDs[0])
             matchAnalysed = s.analysisEngine.AnalyseNode(match, "matches")
             playersAnalysed = []
             for player in players:
@@ -538,38 +544,104 @@ class ReplayGUI:
                 teamsAnalysed.append(s.analysisEngine.AnalyseNode(team, "teams"))
             
             matchNodes = [x for x in matchAnalysed.nodes.values()]
-            matchNodes.sort(reverse = True, key = lambda x : abs(x.cV))
+            matchNodes.sort(reverse = True, key = lambda x : abs(x.cR))
 
             playersNodes = [[x for x in y.nodes.values()] for y in playersAnalysed]
-            playersNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cV)) for x in playersNodes]
+            playersNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in playersNodes]
 
             teamsNodes = [[x for x in y.nodes.values()] for y in teamsAnalysed]
-            teamsNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cV)) for x in teamsNodes]
-        s.GenerateAnalysedNodesGUI(matchNodes, playersNodes, teamsNodes, analysisType)
-    def GenerateAnalysedNodesGUI(s, mNodes, pNodes, tNodes, aType):
+            teamsNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in teamsNodes]
+        s.GenerateAnalysedNodesGUI(matchNodes, playersNodes, teamsNodes, analysisType, players, teams)
+    def GenerateAnalysedNodesGUI(s, mNodes, pNodes, tNodes, aType, players, teams):
         s.DeleteIDEntries()
 
         s.tabParent = ttk.Notebook(s.w)
-
         s.matchTab = ttk.Frame(s.tabParent)
 
         s.playerTabs = [ttk.Frame(s.tabParent) for _ in range(len(pNodes))]
 
         s.teamTabs = [ttk.Frame(s.tabParent) for _ in range(len(tNodes))]
 
-        analysisNodeColumnsIDs = ("name", "tag", "relevancy", "accountForDuplicates", "punishDuplicate", "teamStat",
+        analysisNodeColumnsIDs = ("name", "tag", "relevancy", "accountForDuplicates", "percentage",
                                "rawValue", "value", "rawRelevancy", "calculatedRelevancy")
-        analysisNodeColumnsName = ("Name", "Tag", "Relevancy", "Account for Duplicates", "Punish Duplicate", "Team Stat",
+        analysisNodeColumnsName = ("Name", "Tag", "Relevancy", "Account for Duplicates", "Percentage",
                                "Raw Value", "Value", "Raw Relevancy", "Calculated Relevancy")
-        
-        s.matchTree = ttk.Treeview(s.matchTab, columns = analysisNodeColumnsIDs)
+        analysisNodeColumnsWidth = (120, 100, 70, 70, 100, 100, 100, 100, 120)
+        print("Creating Tree")
+        s.matchTree = ttk.Treeview(s.matchTab, columns = analysisNodeColumnsIDs, show = "headings")
+
+        s.matchTree.grid(column = 0, row = 0)
+        s.mVerticalScrollBar = ttk.Scrollbar(s.matchTab, orient = tk.VERTICAL, command = s.matchTree.yview)
+        s.matchTree.configure(yscroll = s.mVerticalScrollBar.set)
+        s.mVerticalScrollBar.grid(row = 0, column = 1)
 
         for i in range(len(analysisNodeColumnsIDs)):
             s.matchTree.heading(analysisNodeColumnsIDs[i], text = analysisNodeColumnsName[i])
+            s.matchTree.column(s.matchTree["columns"][i], width = analysisNodeColumnsWidth[i])
         for node in mNodes:
-            node : AnalysisNode
-            values = (node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.pD, node.rV, node.v, node.rR, node.cR)
+            values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR]
+            values = [round(x, 2) if isinstance(x, float) else x for x in values]
+             
             s.matchTree.insert("", tk.END, values = values)
+        s.tabParent.add(s.matchTab, text= "Match")
+
+
+        playerTrees = []
+        playerScrollBars = []
+        for i, playerTab in enumerate(s.playerTabs):
+            playerTree = ttk.Treeview(playerTab, columns = analysisNodeColumnsIDs, show = "headings")
+            playerTree.grid(column = 0, row = 0)
+            playerVerticalScrollBar = ttk.Scrollbar(s.matchTab, orient = tk.VERTICAL, command = s.matchTree.yview)
+            playerTree.configure(yscroll = playerVerticalScrollBar.set)
+            playerVerticalScrollBar.grid(row = 0, column = 1)
+
+            for j in range(len(analysisNodeColumnsIDs)):
+                playerTree.heading(analysisNodeColumnsIDs[j], text = analysisNodeColumnsName[j])
+                playerTree.column(s.matchTree["columns"][j], width = analysisNodeColumnsWidth[j])
+            for node in mNodes:
+                values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR]
+                values = [round(x, 2) if isinstance(x, float) else x for x in values]
+                
+                playerTree.insert("", tk.END, values = values)
+            playerTrees.append(playerTree)
+            playerScrollBars.append(playerVerticalScrollBar)
+
+            name = players[i].pList[3]
+            s.tabParent.add(playerTab, text = name)
+        
+
+        teamTrees = []
+        teamScrollBars = []
+        for i, teamTab in enumerate(s.teamTabs):
+            teamTree = ttk.Treeview(teamTab, columns = analysisNodeColumnsIDs, show = "headings")
+            teamTree.grid(column = 0, row = 0)
+            teamVerticalScrollBar = ttk.Scrollbar(s.matchTab, orient = tk.VERTICAL, command = s.matchTree.yview)
+            teamTree.configure(yscroll = teamVerticalScrollBar.set)
+            teamVerticalScrollBar.grid(row = 0, column = 1)
+
+            for j in range(len(analysisNodeColumnsIDs)):
+                teamTree.heading(analysisNodeColumnsIDs[j], text = analysisNodeColumnsName[j])
+                teamTree.column(s.matchTree["columns"][j], width = analysisNodeColumnsWidth[j])
+            for node in mNodes:
+                values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR]
+                values = [round(x, 2) if isinstance(x, float) else x for x in values]
+                
+                teamTree.insert("", tk.END, values = values)
+            teamTrees.append(teamTree)
+            teamScrollBars.append(teamVerticalScrollBar)
+            teamColour = teams[i].players[0].pList[8]
+            s.tabParent.add(teamTab, text = teamColour)
+
+
+
+        
+
+
+
+        s.tabParent.grid(column = 0, row = 0)
+
+        
+        print("Created Tree")    
 
     def DeleteIDEntries(s):
         s.idEntry.destroy()
