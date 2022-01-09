@@ -251,18 +251,20 @@ class Team:
 
         goalSequence = matchList[11]
         if goalSequence:
+            goalSequence = goalSequence.split(",")
             currentScores = [0]
             for goal in goalSequence:
                 currentScore = currentScores[-1]
-                print(teamPlayerIDs)
-                print(goal)
-                currentScore += 1 if goal in teamPlayerIDs else -1
-                currentScores.append(currentScores)
+                if int(goal) in teamPlayerIDs:
+                    currentScore += 1
+                else:
+                    currentScore -= 1
+                currentScores.append(currentScore)
             maxLeadNode = Team.analysisNodes[0].copy()
             minLeadNode = Team.analysisNodes[1].copy()
             finalLeadNode = Team.analysisNodes[2].copy()
             comebackNode = Team.analysisNodes[3].copy()
-            chokeNode = Team.analysisNodes[5].copy()
+            chokeNode = Team.analysisNodes[4].copy()
 
             maxLeadNode.rV = max(currentScores)
             minLeadNode.rV = min(currentScores)
@@ -333,7 +335,8 @@ class Match:
 
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, tagsToLoad = None):
-        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
         if loadReplays:
