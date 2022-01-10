@@ -7,7 +7,7 @@ import tkinter
 from typing import List, Type
 
 class AnalysisNode:
-    def __init__(self, name, tag, analysisType, relevancy = {}, percentage = False, calculation = False, accountForDuplicates = True, punishDuplicates = False, teamStat = True, index = -1, default = -1) -> None:
+    def __init__(self, name, tag, analysisType, relevancy = {}, percentage = False, calculation = False, accountForDuplicates = True, punishDuplicates = False, teamStat = True, index = -1, default = -1, percentageAccountForValue = False) -> None:
         self.n = name
         self.t = tag
         self.aT = analysisType
@@ -21,6 +21,8 @@ class AnalysisNode:
         self.i = index
 
         self.default = default
+        
+        self.pAccountForV = percentageAccountForValue
     def __eq__(self, __o: object) -> bool:
         return self.n == __o.n
     def copy(self):
@@ -141,7 +143,7 @@ class Player:
                     AnalysisNode('assists', 'core', 0, index = retrievalNodes.index("assists")),
                     AnalysisNode('saves', 'core', 0, index = retrievalNodes.index("saves")),
                     AnalysisNode('shots', 'core', 0, index = retrievalNodes.index("shots")),
-                    AnalysisNode('mvp', 'core', 0, index = retrievalNodes.index("mvp")),
+                    AnalysisNode('mvp', 'core', 0, index = retrievalNodes.index("mvp"), punishDuplicates = True),
                     AnalysisNode('shootingP', 'offense', 0, index = retrievalNodes.index("shootingP")),
                     AnalysisNode('totalHits', 'playstyle', 0, index = retrievalNodes.index("totalHits")),
                     AnalysisNode('totalPasses', 'playstyle', 0, index = retrievalNodes.index("totalPasses")),
@@ -169,6 +171,7 @@ class Player:
                     AnalysisNode('goalParticipation', "playstyle", 0, percentage = "teamGoals", calculation = ["@ + @", "goals", "assists"]),
                     AnalysisNode('scoredFirst', "playstyle", 2, calculation = True),
                         ]
+    vAccountPModifier = 0.7
     def __init__(self, playerList, matchList):
         nodesCopy = [x.copy() for x in Player.analysisNodes]
         self.pList = playerList
@@ -209,7 +212,7 @@ class Player:
                     else:
                         match node.p:
                             case "teamGoals":
-                                teamGoalsIndex = 9 if playerList[8] == "blue" else 10
+                                teamGoalsIndex = 10 if playerList[8] == "blue" else 9
                                 divValue = matchList[teamGoalsIndex]
                             case "totalFifties":
                                 divValue = playerList[Player.retrievalNodes.index("fiftyWins")] + playerList[Player.retrievalNodes.index("fiftyLosses")] + playerList[Player.retrievalNodes.index("fiftyDraws")]
@@ -218,6 +221,9 @@ class Player:
                 else:
                     node.v = -1
                     node.dV = True
+                if node.pAccountForV:
+                    node.v *= Player.vAccountPModifier
+                    node.v += node.rV * node.pAccountForV
             else:
                 node.dV = False
                 try:
@@ -361,8 +367,8 @@ class Match:
 
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, tagsToLoad = None):
-        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
         if loadReplays:
