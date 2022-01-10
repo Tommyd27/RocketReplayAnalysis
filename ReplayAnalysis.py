@@ -66,7 +66,7 @@ class Player:
                 "totalAerials", "totalClears", "isKeyboard", "tBallCam", "qCarries", "qFlicks", "totalCarryT", "totalCarryD", "aCarryT", "totalKickoffs", 
                 "numGoBoost", "numnGoFollow", "numGoBall", "numFirstTouch", "aBoostUsed", "fiftyWins", "fiftyLosses", "fiftyDraws", "isBot", "partyLeaderID", 
                 "ballchasingStartTime", "ballchasingEndTime", "ballchasingBoostTime", "ballchasingStatTime", "calculatedFirstFrame", "calculatedTimeInGame", "matchID"]
-    analysisNodes =[AnalysisNode('carName', '', 1, index = retrievalNodes.index("carName"), relevancy = 0, teamStat = False), 
+    analysisNodes =[AnalysisNode('carName', '', 1, index = retrievalNodes.index("carName"), relevancy = {"top" : 0, "average" : 0}, teamStat = False), 
                     AnalysisNode('bUsage', 'boost', 0, index = retrievalNodes.index("bUsage")),
                     AnalysisNode('bPerMinute', 'boost', 0, index = retrievalNodes.index("bPerMinute")),
                     AnalysisNode('bConsumptionPerMinute', 'boost', 0, index = retrievalNodes.index("bConsumptionPerMinute")),
@@ -84,23 +84,23 @@ class Player:
                     AnalysisNode('qOverfill', 'boost', 0, index = retrievalNodes.index("qOverfill")),
                     AnalysisNode('qOverfillStolen', 'boost', 0, index = retrievalNodes.index("qOverfillStolen")),
                     AnalysisNode('qWasted', 'boost', 0, index = retrievalNodes.index("qWasted")),
-                    AnalysisNode('tZeroBoost', 'boost', 0, index = retrievalNodes.index("tZeroBoost")),
-                    AnalysisNode('tFullBoost', 'boost', 0, index = retrievalNodes.index("tFullBoost")),
-                    AnalysisNode('tBZeroQuarter', 'boost', 0, index = retrievalNodes.index("tBZeroQuarter")),
-                    AnalysisNode('tBQuaterHalf', 'boost', 0, index = retrievalNodes.index("tBQuaterHalf")),
-                    AnalysisNode('tBHalfUpperQuater', 'boost', 0, index = retrievalNodes.index("tBHalfUpperQuater")),
-                    AnalysisNode('tBUpperQuaterFull', 'boost', 0, index = retrievalNodes.index("tBUpperQuaterFull")),
+                    AnalysisNode('tZeroBoost', 'boost', 0, index = retrievalNodes.index("tZeroBoost"), percentage = "ballchasingBoostTime"),
+                    AnalysisNode('tFullBoost', 'boost', 0, index = retrievalNodes.index("tFullBoost"), percentage = "ballchasingBoostTime"),
+                    AnalysisNode('tBZeroQuarter', 'boost', 0, index = retrievalNodes.index("tBZeroQuarter"), percentage = "ballchasingBoostTime"),
+                    AnalysisNode('tBQuaterHalf', 'boost', 0, index = retrievalNodes.index("tBQuaterHalf"), percentage = "ballchasingBoostTime"),
+                    AnalysisNode('tBHalfUpperQuater', 'boost', 0, index = retrievalNodes.index("tBHalfUpperQuater"), percentage = "ballchasingBoostTime"),
+                    AnalysisNode('tBUpperQuaterFull', 'boost', 0, index = retrievalNodes.index("tBUpperQuaterFull"), percentage = "ballchasingBoostTime"),
                     AnalysisNode('aSpeed', 'speed', 0, index = retrievalNodes.index("aSpeed")),
                     AnalysisNode('aHitDistance', 'hits', 0, index = retrievalNodes.index("aHitDistance")),
                     AnalysisNode('aDistanceFromCentre', 'positioning', 0, index = retrievalNodes.index("aDistanceFromCentre")),
                     AnalysisNode('dTotal', 'speed', 0, index = retrievalNodes.index("dTotal")),
-                    AnalysisNode('tSonicS', 'speed', 0, index = retrievalNodes.index("tSonicS")),
-                    AnalysisNode('tBoostS', 'speed', 0, index = retrievalNodes.index("tBoostS")),
-                    AnalysisNode('tSlowS', 'speed', 0, index = retrievalNodes.index("tSlowS")),
-                    AnalysisNode('tGround', 'playstyle', 0, index = retrievalNodes.index("tGround")),
-                    AnalysisNode('tLowAir', 'playstyle', 0, index = retrievalNodes.index("tLowAir")),
-                    AnalysisNode('tHighAir', 'playstyle', 0, index = retrievalNodes.index("tHighAir")),
-                    AnalysisNode('tPowerslide', 'speed', 0, index = retrievalNodes.index("tPowerslide")),
+                    AnalysisNode('tSonicS', 'speed', 0, index = retrievalNodes.index("tSonicS"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tBoostS', 'speed', 0, index = retrievalNodes.index("tBoostS"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tSlowS', 'speed', 0, index = retrievalNodes.index("tSlowS"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tGround', 'playstyle', 0, index = retrievalNodes.index("tGround"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tLowAir', 'playstyle', 0, index = retrievalNodes.index("tLowAir"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tHighAir', 'playstyle', 0, index = retrievalNodes.index("tHighAir"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tPowerslide', 'speed', 0, index = retrievalNodes.index("tPowerslide"), percentage = "ballchasingStatTime"),
                     AnalysisNode('nPowerslide', 'speed', 0, index = retrievalNodes.index("nPowerslide")),
                     AnalysisNode('aPowerslideDuration', 'speed', 0, index = retrievalNodes.index("aPowerslideDuration")),
                     AnalysisNode('aSpeedPercentage', 'speed', 0, index = retrievalNodes.index("aSpeedPercentage")),
@@ -108,25 +108,25 @@ class Player:
                     AnalysisNode('aDBallPossession', 'positioning', 0, index = retrievalNodes.index("aDBallPossession")),
                     AnalysisNode('aDBallNoPossession', 'positioning', 0, index = retrievalNodes.index("aDBallNoPossession")),
                     AnalysisNode('aDMates', 'positioning', 0, index = retrievalNodes.index("aDMates")),
-                    AnalysisNode('tDefensiveThird', 'positioning', 0, index = retrievalNodes.index("tDefensiveThird")),
-                    AnalysisNode('tNeutralThird', 'positioning', 0, index = retrievalNodes.index("tNeutralThird")),
-                    AnalysisNode('tOffensiveThird', 'positioning', 0, index = retrievalNodes.index("tOffensiveThird")),
-                    AnalysisNode('tDefensiveHalf', 'positioning', 0, index = retrievalNodes.index("tDefensiveHalf")),
-                    AnalysisNode('tOffensiveHalf', 'positioning', 0, index = retrievalNodes.index("tOffensiveHalf")),
-                    AnalysisNode('tBehindBall', 'playstyle', 0, index = retrievalNodes.index("tBehindBall")),
-                    AnalysisNode('tInFrontBall', 'playstyle', 0, index = retrievalNodes.index("tInFrontBall")),
-                    AnalysisNode('tMostBack', 'playstyle', 0, index = retrievalNodes.index("tMostBack")),
-                    AnalysisNode('tMostForward', 'playstyle', 0, index = retrievalNodes.index("tMostForward")),
-                    AnalysisNode('goalsConcededLast', 'defense', 0, index = retrievalNodes.index("goalsConcededLast")),
-                    AnalysisNode('tClosestBall', 'playstyle', 0, index = retrievalNodes.index("tClosestBall")),
-                    AnalysisNode('tFarthestBall', 'playstyle', 0, index = retrievalNodes.index("tFarthestBall")),
-                    AnalysisNode('tCloseBall', 'playstyle', 0, index = retrievalNodes.index("tCloseBall")),
-                    AnalysisNode('tNearWall', 'positioning', 0, index = retrievalNodes.index("tNearWall")),
-                    AnalysisNode('tInCorner', 'positioning', 0, index = retrievalNodes.index("tInCorner")),
-                    AnalysisNode('tOnWall', 'positioning', 0, index = retrievalNodes.index("tOnWall")),
+                    AnalysisNode('tDefensiveThird', 'positioning', 0, index = retrievalNodes.index("tDefensiveThird"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tNeutralThird', 'positioning', 0, index = retrievalNodes.index("tNeutralThird"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tOffensiveThird', 'positioning', 0, index = retrievalNodes.index("tOffensiveThird"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tDefensiveHalf', 'positioning', 0, index = retrievalNodes.index("tDefensiveHalf"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tOffensiveHalf', 'positioning', 0, index = retrievalNodes.index("tOffensiveHalf"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tBehindBall', 'playstyle', 0, index = retrievalNodes.index("tBehindBall"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tInFrontBall', 'playstyle', 0, index = retrievalNodes.index("tInFrontBall"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tMostBack', 'playstyle', 0, index = retrievalNodes.index("tMostBack"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tMostForward', 'playstyle', 0, index = retrievalNodes.index("tMostForward"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('goalsConcededLast', 'defense', 0, index = retrievalNodes.index("goalsConcededLast"), teamStat = False),
+                    AnalysisNode('tClosestBall', 'playstyle', 0, index = retrievalNodes.index("tClosestBall"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tFarthestBall', 'playstyle', 0, index = retrievalNodes.index("tFarthestBall"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tCloseBall', 'playstyle', 0, index = retrievalNodes.index("tCloseBall"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tNearWall', 'positioning', 0, index = retrievalNodes.index("tNearWall"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tInCorner', 'positioning', 0, index = retrievalNodes.index("tInCorner"), percentage = "ballchasingStatTime"),
+                    AnalysisNode('tOnWall', 'positioning', 0, index = retrievalNodes.index("tOnWall"), percentage = "ballchasingStatTime"),
                     AnalysisNode('dHitForward', 'hits', 0, index = retrievalNodes.index("dHitForward")),
                     AnalysisNode('dHitBackward', 'hits', 0, index = retrievalNodes.index("dHitBackward")),
-                    AnalysisNode('pTime', 'possession', 0, index = retrievalNodes.index("pTime")),
+                    AnalysisNode('pTime', 'possession', 0, index = retrievalNodes.index("pTime"), percentage = "ballchasingStatTime"),
                     AnalysisNode('turnovers', 'possession', 0, index = retrievalNodes.index("turnovers")),
                     AnalysisNode('turnoversMyHalf', 'possession', 0, index = retrievalNodes.index("turnoversMyHalf")),
                     AnalysisNode('turnoversTheirHalf', 'possession', 0, index = retrievalNodes.index("turnoversTheirHalf")),
@@ -149,10 +149,10 @@ class Player:
                     AnalysisNode('totalDribblesConts', 'playstyle', 0, index = retrievalNodes.index("totalDribblesConts")),
                     AnalysisNode('totalAerials', 'playstyle', 0, index = retrievalNodes.index("totalAerials")),
                     AnalysisNode('totalClears', 'playstyle', 0, index = retrievalNodes.index("totalClears")),
-                    AnalysisNode('tBallCam', 'misc', 0, index = retrievalNodes.index("tBallCam")),
+                    AnalysisNode('tBallCam', 'misc', 0, index = retrievalNodes.index("tBallCam"), percentage = "ballchasingStatTime"),
                     AnalysisNode('qCarries', 'playstyle', 0, index = retrievalNodes.index("qCarries")),
                     AnalysisNode('qFlicks', 'playstyle', 0, index = retrievalNodes.index("qFlicks")),
-                    AnalysisNode('totalCarryT', 'playstyle', 0, index = retrievalNodes.index("totalCarryT")),
+                    AnalysisNode('totalCarryT', 'playstyle', 0, index = retrievalNodes.index("totalCarryT"), percentage = "ballchasingStatTime"),
                     AnalysisNode('totalCarryD', 'playstyle', 0, index = retrievalNodes.index("totalCarryD")),
                     AnalysisNode('aCarryT', 'playstyle', 0, index = retrievalNodes.index("aCarryT")),
                     AnalysisNode('totalKickoffs', 'kickoffs', 0, index = retrievalNodes.index("totalKickoffs")),
@@ -164,6 +164,8 @@ class Player:
                     AnalysisNode('fiftyWins', 'fifties', 0, index = retrievalNodes.index("fiftyWins")),
                     AnalysisNode('fiftyLosses', 'fifties', 0, index = retrievalNodes.index("fiftyLosses")),
                     AnalysisNode('fiftyDraws', 'fifties', 0, index = retrievalNodes.index("fiftyDraws")),
+                    AnalysisNode("fiftyWinRate", "fifties", 0, percentage = "totalFifties", index = retrievalNodes.index("fiftyWins")),
+                    AnalysisNode("fiftyNotLossRate", "fifties", 0, percentage = "totalFifties", calculation = ["@ + @", "fiftyWins", "fiftyDraws"]),
                     AnalysisNode('goalParticipation', "playstyle", 0, percentage = "teamGoals", calculation = ["@ + @", "goals", "assists"]),
                     AnalysisNode('scoredFirst', "playstyle", 2, calculation = True),
                         ]
@@ -185,22 +187,37 @@ class Player:
                                 node.rV = -1
                 else:
                     calcString : str = node.c[0]
-                    variableList = [x.rV for x in self.nodes.values() if x.n in node.c[1:]]
-                    for var in variableList:
-                        calcString = calcString.replace("@", str(var), 1)
-                    node.rV = eval(calcString)
+                    variableList = [x.rV if x.rV != None else -1 for x in self.nodes.values() if x.n in node.c[1:]]
+                    if variableList.count(-1) == len(variableList):
+                        node.rV = -1
+                    else:
+                        variableList = [x if x != -1 else 0 for x in variableList]
+                        for var in variableList:
+                            calcString = calcString.replace("@", str(var), 1)
+                        try:
+                            node.rV = eval(calcString)
+                        except SyntaxError:
+                            print(calcString)
             else:
                 node.rV = playerList[node.i]
+                if not node.rV:
+                    node.rV = -1
             if node.p:
-                if node.p in Player.retrievalNodes:
-                    divValue = playerList[Player.retrievalNodes.index(node.p)]
+                if node.rV != -1:
+                    if node.p in Player.retrievalNodes:
+                        divValue = playerList[Player.retrievalNodes.index(node.p)]
+                    else:
+                        match node.p:
+                            case "teamGoals":
+                                teamGoalsIndex = 9 if playerList[8] == "blue" else 10
+                                divValue = matchList[teamGoalsIndex]
+                            case "totalFifties":
+                                divValue = playerList[Player.retrievalNodes.index("fiftyWins")] + playerList[Player.retrievalNodes.index("fiftyLosses")] + playerList[Player.retrievalNodes.index("fiftyDraws")]
+                    node.v = node.rV / (divValue if isinstance(divValue, (int, float)) and divValue > 0 else 1)
+                    node.dV = divValue
                 else:
-                    match node.p:
-                        case "teamGoals":
-                            teamGoalsIndex = 9 if playerList[8] == "blue" else 10
-                            divValue = matchList[teamGoalsIndex]
-                node.v = node.rV / (divValue if isinstance(divValue, (int, float)) and divValue > 0 else 1)
-                node.dV = divValue
+                    node.v = -1
+                    node.dV = True
             else:
                 node.dV = False
                 try:
@@ -243,7 +260,11 @@ class Team:
                         print(debugLen)
                         print([x[i].v for x in playersValues if x[i].v not in [-1, None]])
                         raise e
+            if not "rV" in node.__dict__:
+                node.rV = node.v
             self.nodes[node.n] = node
+            if "dV" not in node.__dict__:
+                node.dV = False
         teamColour = players[0].pList[8]
 
         teamScore = matchList[9] if teamColour == "orange" else matchList[10]
@@ -331,6 +352,7 @@ class Match:
             if node.i == 7:
                 pass
                 #print(self.nodes["overtime"].v)
+
     def __repr__(self) -> str:
         output = ""
         for node in self.nodes:
@@ -339,8 +361,8 @@ class Match:
 
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, tagsToLoad = None):
-        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
         if loadReplays:
@@ -586,49 +608,49 @@ class ReplayGUI:
         s.tabParent.add(s.matchTab, text= "Match")
 
 
-        playerTrees = []
-        playerScrollBars = []
+        s.playerTrees = []
+        s.playerScrollBars = []
         for i, playerTab in enumerate(s.playerTabs):
             playerTree = ttk.Treeview(playerTab, columns = analysisNodeColumnsIDs, show = "headings")
             playerTree.grid(column = 0, row = 0)
-            playerVerticalScrollBar = ttk.Scrollbar(s.matchTab, orient = tk.VERTICAL, command = s.matchTree.yview)
+            playerVerticalScrollBar = ttk.Scrollbar(playerTab, orient = tk.VERTICAL, command = playerTree.yview)
             playerTree.configure(yscroll = playerVerticalScrollBar.set)
             playerVerticalScrollBar.grid(row = 0, column = 1)
 
             for j in range(len(analysisNodeColumnsIDs)):
                 playerTree.heading(analysisNodeColumnsIDs[j], text = analysisNodeColumnsName[j])
                 playerTree.column(s.matchTree["columns"][j], width = analysisNodeColumnsWidth[j])
-            for node in mNodes:
+            for node in pNodes[i]:
                 values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR]
                 values = [round(x, 2) if isinstance(x, float) else x for x in values]
                 
                 playerTree.insert("", tk.END, values = values)
-            playerTrees.append(playerTree)
-            playerScrollBars.append(playerVerticalScrollBar)
+            s.playerTrees.append(playerTree)
+            s.playerScrollBars.append(playerVerticalScrollBar)
 
             name = players[i].pList[3]
             s.tabParent.add(playerTab, text = name)
         
 
-        teamTrees = []
-        teamScrollBars = []
+        s.teamTrees = []
+        s.teamScrollBars = []
         for i, teamTab in enumerate(s.teamTabs):
             teamTree = ttk.Treeview(teamTab, columns = analysisNodeColumnsIDs, show = "headings")
             teamTree.grid(column = 0, row = 0)
-            teamVerticalScrollBar = ttk.Scrollbar(s.matchTab, orient = tk.VERTICAL, command = s.matchTree.yview)
+            teamVerticalScrollBar = ttk.Scrollbar(teamTab, orient = tk.VERTICAL, command = teamTree.yview)
             teamTree.configure(yscroll = teamVerticalScrollBar.set)
             teamVerticalScrollBar.grid(row = 0, column = 1)
 
             for j in range(len(analysisNodeColumnsIDs)):
                 teamTree.heading(analysisNodeColumnsIDs[j], text = analysisNodeColumnsName[j])
                 teamTree.column(s.matchTree["columns"][j], width = analysisNodeColumnsWidth[j])
-            for node in mNodes:
-                values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR]
-                values = [round(x, 2) if isinstance(x, float) else x for x in values]
+            for node in tNodes[i]:
+                tValues = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR]
+                tValues = [round(x, 2) if isinstance(x, float) else x for x in tValues]
                 
-                teamTree.insert("", tk.END, values = values)
-            teamTrees.append(teamTree)
-            teamScrollBars.append(teamVerticalScrollBar)
+                teamTree.insert("", tk.END, values = tValues)
+            s.teamTrees.append(teamTree)
+            s.teamScrollBars.append(teamVerticalScrollBar)
             teamColour = teams[i].players[0].pList[8]
             s.tabParent.add(teamTab, text = teamColour)
 
