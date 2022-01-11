@@ -166,9 +166,9 @@ class Player:
                     AnalysisNode('fiftyWins', 'fifties', 0, index = retrievalNodes.index("fiftyWins")),
                     AnalysisNode('fiftyLosses', 'fifties', 0, index = retrievalNodes.index("fiftyLosses")),
                     AnalysisNode('fiftyDraws', 'fifties', 0, index = retrievalNodes.index("fiftyDraws")),
-                    AnalysisNode("fiftyWinRate", "fifties", 0, percentage = "totalFifties", index = retrievalNodes.index("fiftyWins")),
-                    AnalysisNode("fiftyNotLossRate", "fifties", 0, percentage = "totalFifties", calculation = ["@ + @", "fiftyWins", "fiftyDraws"]),
-                    AnalysisNode('goalParticipation', "playstyle", 0, percentage = "teamGoals", calculation = ["@ + @", "goals", "assists"]),
+                    AnalysisNode("fiftyWinRate", "fifties", 0, percentage = "totalFifties", index = retrievalNodes.index("fiftyWins"), percentageAccountForValue = (0.2, 0.5)),
+                    AnalysisNode("fiftyNotLossRate", "fifties", 0, percentage = "totalFifties", calculation = ["@ + @", "fiftyWins", "fiftyDraws"], percentageAccountForValue = (0.2, 0.5)),
+                    AnalysisNode('goalParticipation', "playstyle", 0, percentage = "teamGoals", calculation = ["@ + @", "goals", "assists"], percentageAccountForValue = (0.2, 0.5)),
                     AnalysisNode('scoredFirst', "playstyle", 2, calculation = True),
                         ]
     vAccountPModifier = 0.7
@@ -222,6 +222,7 @@ class Player:
                     node.v = -1
                     node.dV = True
                 if node.pAccountForV:
+                    print("HELLO")
                     node.v *= Player.vAccountPModifier
                     node.v += node.rV * node.pAccountForV
             else:
