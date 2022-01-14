@@ -26,7 +26,7 @@ class AnalysisNode:
     def __eq__(self, __o: object) -> bool:
         return self.n == __o.n
     def copy(self):
-        return AnalysisNode(self.n, self.t, self.aT, self.r, self.p, self.c, self.aFD, self.pD, self.tS, self.i, self.default)
+        return AnalysisNode(self.n, self.t, self.aT, self.r, self.p, self.c, self.aFD, self.pD, self.tS, self.i, self.default, self.pAccountForV)
     def __repr__(self) -> str:
         output = f"Name: {self.n}\nRelevance: {self.r}\nIndex: {self.i}"
         if "rV" in self.__dict__:
@@ -37,6 +37,8 @@ class AnalysisNode:
             output += f"\nRaw Relevancy: {self.rR}"
         if "cR" in self.__dict__:
             output += f"\nCalculated Relevancy: {self.cR}"
+        if "pos" in self.__dict__:
+            output += f"\nPosition: {self.pos}"
         return output
 
 class Player:
@@ -171,7 +173,6 @@ class Player:
                     AnalysisNode('goalParticipation', "playstyle", 0, percentage = "teamGoals", calculation = ["@ + @", "goals", "assists"], percentageAccountForValue = (0.2, 0.5)),
                     AnalysisNode('scoredFirst', "playstyle", 2, calculation = True),
                         ]
-    vAccountPModifier = 0.7
     def __init__(self, playerList, matchList):
         nodesCopy = [x.copy() for x in Player.analysisNodes]
         self.pList = playerList
@@ -221,10 +222,10 @@ class Player:
                 else:
                     node.v = -1
                     node.dV = True
+                
                 if node.pAccountForV:
-                    print("HELLO")
-                    node.v *= Player.vAccountPModifier
-                    node.v += node.rV * node.pAccountForV
+                    node.v *= node.pAccountForV[1]
+                    node.v += node.rV * node.pAccountForV[0]
             else:
                 node.dV = False
                 try:
@@ -463,6 +464,7 @@ class ReplayAnalysis:
             if node.v in [-1]:
                 node.rR = 0
                 node.cR = 0
+                node.pos = "N/A"
             else:
                 match node.aT:
                     case 0:
@@ -479,7 +481,7 @@ class ReplayAnalysis:
 
                             valueIndex = nodesListInsert.index(node.v)
                             listLength = len(nodesListInsert)
-
+                            node.pos = (valueIndex, listLength)
                             node.rR = valueIndex / (listLength - 1)
                             node.cR = node.rR
                             node.cR -= 0.5
@@ -505,7 +507,10 @@ class ReplayAnalysis:
                                 node.cR *= 1.2
                             if "average" in node.r:
                                 node.cR *= node.r["average"]
-                            
+                            nodesAll.append(node.v)
+                            nIndex = nodesAll.index(node.v)
+
+                            node.pos = (nIndex, len(nodesAll))
 
 
 
@@ -515,6 +520,7 @@ class ReplayAnalysis:
                     case _:
                         node.rR = 0
                         node.cR = 0
+                        node.pos = "N/A"
         return analyseNode
     def AnalyseReplay(self, replayID):
         executeSTR = f"SELECT * FROM matchTable WHERE matchID = {replayID}"
@@ -580,6 +586,33 @@ class ReplayGUI:
 
             teamsNodes = [[x for x in y.nodes.values()] for y in teamsAnalysed]
             teamsNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in teamsNodes]
+        else:
+            match, players, teams = s.analysisEngine.GetReplay(gameIDs[0])
+            allDetails = [s.analysisEngine.GetReplay(x) for x in gameIDs[1:]]
+            aMatches, aPlayers, aTeams = []
+            for detail in allDetails:
+                aMatches.append(detail[0])
+                aPlayers.append(detail[1])
+                aTeams.append(detail[2])
+            
+            matchAnalysed = s.analysisEngine.AnalyseNode(match, aMatches, aType = "average")
+
+            playersAnalysed = []
+            for player in players:
+                playersAnalysed.append(s.analysisEngine.AnalyseNode(player, aPlayers, aType = "average"))
+            teamsAnalysed = []
+            for team in teams:
+                teamsAnalysed.append(s.analysisEngine.AnalyseNode(team, aTeams, aType = "average"))
+            
+            matchNodes = [x for x in matchAnalysed.nodes.values()]
+            matchNodes.sort(reverse = True, key = lambda x : abs(x.cR))
+
+            playersNodes = [[x for x in y.nodes.values()] for y in playersAnalysed]
+            playersNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in playersNodes]
+
+            teamsNodes = [[x for x in y.nodes.values()] for y in teamsAnalysed]
+            teamsNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in teamsNodes]
+
         s.GenerateAnalysedNodesGUI(matchNodes, playersNodes, teamsNodes, analysisType, players, teams)
     def GenerateAnalysedNodesGUI(s, mNodes, pNodes, tNodes, aType, players, teams):
         s.DeleteIDEntries()
@@ -592,10 +625,10 @@ class ReplayGUI:
         s.teamTabs = [ttk.Frame(s.tabParent) for _ in range(len(tNodes))]
 
         analysisNodeColumnsIDs = ("name", "tag", "relevancy", "accountForDuplicates", "percentage",
-                               "rawValue", "value", "rawRelevancy", "calculatedRelevancy")
+                               "rawValue", "value", "rawRelevancy", "calculatedRelevancy", "pos")
         analysisNodeColumnsName = ("Name", "Tag", "Relevancy", "Account for Duplicates", "Percentage",
-                               "Raw Value", "Value", "Raw Relevancy", "Calculated Relevancy")
-        analysisNodeColumnsWidth = (120, 100, 70, 70, 100, 100, 100, 100, 120)
+                               "Raw Value", "Value", "Raw Relevancy", "Calculated Relevancy", "Position")
+        analysisNodeColumnsWidth = (120, 100, 70, 70, 100, 100, 100, 100, 120, 100)
         print("Creating Tree")
         s.matchTree = ttk.Treeview(s.matchTab, columns = analysisNodeColumnsIDs, show = "headings")
 
@@ -608,7 +641,7 @@ class ReplayGUI:
             s.matchTree.heading(analysisNodeColumnsIDs[i], text = analysisNodeColumnsName[i])
             s.matchTree.column(s.matchTree["columns"][i], width = analysisNodeColumnsWidth[i])
         for node in mNodes:
-            values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR]
+            values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR, node.pos]
             values = [round(x, 2) if isinstance(x, float) else x for x in values]
              
             s.matchTree.insert("", tk.END, values = values)
@@ -628,7 +661,7 @@ class ReplayGUI:
                 playerTree.heading(analysisNodeColumnsIDs[j], text = analysisNodeColumnsName[j])
                 playerTree.column(s.matchTree["columns"][j], width = analysisNodeColumnsWidth[j])
             for node in pNodes[i]:
-                values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR]
+                values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR, node.pos]
                 values = [round(x, 2) if isinstance(x, float) else x for x in values]
                 
                 playerTree.insert("", tk.END, values = values)
@@ -652,7 +685,7 @@ class ReplayGUI:
                 teamTree.heading(analysisNodeColumnsIDs[j], text = analysisNodeColumnsName[j])
                 teamTree.column(s.matchTree["columns"][j], width = analysisNodeColumnsWidth[j])
             for node in tNodes[i]:
-                tValues = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR]
+                tValues = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR, node.pos]
                 tValues = [round(x, 2) if isinstance(x, float) else x for x in tValues]
                 
                 teamTree.insert("", tk.END, values = tValues)
