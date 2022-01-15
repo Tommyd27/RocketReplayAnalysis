@@ -704,7 +704,6 @@ class ReplayGUI:
 
         
         print("Created Tree")    
-
     def DeleteIDEntries(s):
         s.idEntry.destroy()
         s.idButton.destroy()
