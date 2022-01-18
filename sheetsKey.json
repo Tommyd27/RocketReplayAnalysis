@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "rocket-replay-analysis",
+  "private_key_id": "6020d2d548aeabaa844da9f2fca4ba7a8dd6883e",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDbuODB9WuJEy3D\nqH4RJc0sp8of+dohvSqhldSpPqDb8FbWh1BKylQRVJKoNyfCbpi+KWfW8A8o/R5t\nBwHNSSWXUyznbRAneCL7NIJBaQcTvX0s8riQB4tt3/tBVVbLh5/CTqZKhywrXTeL\nPwzWB7D9NGCsEF3DcG+QeboScnN9ob5s4eKuzNxwLCbwCXrUS+vFcpZbQUJcsFtS\nukRcJvCxQsPIA/2sT62+bNT5AW7ZKLwCdQrGFdoFPvnaCiPl8thX+XKvQkEk5BsC\n0bjdYhHF5Pm+HOgNP4Rf/2Zo87DbhvyHTozChyBVi6f/tdTWX4cLEbDEfLAtqL1e\n8HMFVsJtAgMBAAECggEAGWoqkTTOgfX2cq3AG0Kol1Q3JHi1evaTAkq+5O6qE5aa\nrMjNCEGb9L84EX4DutEpGMHYUXvF/SM+DDVlx3WBBB5qUMCEQFR8k1rxABjiaS2f\nV34hzAMbZROlz9pLplIjMAoB4Rf+i2uGW7Royy7rkXYoAm8IMW2FcgwqcizL4AmJ\nCduGMUFzh9EGa1qzop6IwlRllThP2eoS4enmFYzVNWrqMRILoGvZz+sexrdtCN+5\nCFkL7bKSMNrbkjTBkKVlVPwUrnQaL7X8m+UHveDW9vNKmPVMx8GT0mc2mOTkT87P\n5J+fMP8oL6Vy8TAS+LubXFQxvtQCLfkbIekEZq0SDwKBgQDxUBylmXYHHnMuzBK0\nvFhxup55RG4Eg2sxwWHc5lns6ncXIXY8dVhM4ubm0vJr75IMOZ7nclTETSCdjlxs\nJNkLEypH18m3liXPXrusqpTt3Of6epJZM8SY+aVogwmOEGtnY8Y6H/2O7bUwzUnV\nmqzQoLDPAziTFzC4IyZTR0V7SwKBgQDpGFx6zpntIrHaQeF/nqyYhmy10F2mKMTw\n9905md70iZTtm/4JRBZJpdi/KXrEBV+TZdFQ+iStyrmF8ydz3H2C0zCs0xaDP64O\nyjVu3PP7aLfIOc1DqCVOycE/BYZEvkVIZY3VbOoUNPDFJwG7SvFnrlLUpq4JITtq\nQi8fQ1yuJwKBgQC1KJ9Y8sxYq9Ns3mdsp7j+KEuwXl75pG9k+vitDYGVCrA8/TH2\nUWHo1q7hupujzEaoRtm0h3B7ris+HRHlXgRS/CBRrv4QhPf9pfDev3Du4ViGAl67\n+NEuxrwWqckSjeETzSOTn1CLbIkKChPT+DqkpP4XayOdyVsZ4clz252d4QKBgQDc\nMQQjiolDxrOFvxhaqzTV/J4y/juJHBg2nZ7gq+c+z7zc3LAUZro7JizjIDb1dzH7\nFoKt4S7G8athyvmo7E+wRvpDOECbCYvOMtxY9uaPxzNdNKUf1XYwwEwJ0Zkt1SOz\nqSNbysAxCHWteBSdrcTvsXBTq4TZ4Qe0cAL9oG+rnwKBgBE6KfvGQBicgHPvQNQj\nVR/HRRi2zYjSFB73+VpOpxQ8WEOZqTffEaNaJwYB4M2OpC77/DZGaPuYcUbiLkd6\nVEcg+w9m/CPghm0ll3podqSiqHNOq4kjh0qk2RDddL3kwRua4cf5iRSnk5r9Va3f\nxq/KKGUnpOiE2cPCusZstaHE\n-----END PRIVATE KEY-----\n",
+  "client_email": "apimain@rocket-replay-analysis.iam.gserviceaccount.com",
+  "client_id": "108783598574756691029",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/apimain%40rocket-replay-analysis.iam.gserviceaccount.com"
+}
