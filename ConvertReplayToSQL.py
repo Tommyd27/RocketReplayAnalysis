@@ -9,7 +9,7 @@ from glob import glob
 from os import path
 from shutil import ExecError, move
 debugMode = False
-databaseFolder = r"d:\\Users\\tom\Documents\\Visual Studio Code\\Python Files\\RocketReplayAnalysis\\Database\\"
+databaseFolder = r"d:\\Users\\tom\Documents\\Visual Studio Code\\Python Files\\RocketReplayAnalysis\\RocketReplayAnalysis\\Database\\"
 databaseName = r"replayDatabase.db"
 
 replayFolder = r"C:\\Usergit s\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\\"
@@ -427,7 +427,10 @@ def GetPlayers(playerIndex : int):
             raise BufferError("Player Error")
         for i, player in enumerate(ballchasingDict[colour]["players"]):
             playerIndex += 1
-            name = player["name"]
+            try:
+                name = player["name"]
+            except KeyError:
+                name = "*Blank Name Error*"
             foundPlayer = False
             verifyCheck = int(player["stats"]["core"]["score"])
             calculatedIndex = ""
@@ -446,7 +449,7 @@ def GetPlayers(playerIndex : int):
 
                 if not foundPlayer:
                     for j, playerC in enumerate(calculatedDict["players"]):
-                        if playerC["name"].replace("ぎ", "N0").replace("М", "").replace("っ", "c0").replace("ø", "").replace("μ", "").replace("ı", "1").replace("Ψ", "").replace("ﱞ", "^").replace("ㅁ", "A1").replace("é", "e").replace("レ", "0").replace("ツ", "0").replace("ï", "i").replace("º", "o").replace("たげい", "_0R0D0").replace("ヘイズ-", "000-") == name:#fucking invisible characters and broken shit
+                        if playerC["name"].replace("ぎ", "N0").replace("亗", "N").replace("М", "").replace("っ", "c0").replace("ø", "").replace("μ", "").replace("ı", "1").replace("Ψ", "").replace("ﱞ", "^").replace("ㅁ", "A1").replace("é", "e").replace("п", "?").replace("ú", "u").replace("レ", "0").replace("ツ", "0").replace("ɥ", "e").replace("ï", "i").replace("º", "o").replace("たげい", "_0R0D0").replace("ヘイズ-", "000-") == name:#fucking invisible characters and broken shit
                             calculatedIndex = j
                             break
                 if calculatedIndex == "":
@@ -468,7 +471,7 @@ def GetPlayers(playerIndex : int):
                         print("ballchasing player ids:",[player["id"] for player in ballchasingDict[colour]["players"]])
                         print("ballchasing player id:",player["id"])
                         #print(player)
-                        raise ValueError("Player Error")
+                        raise ValueError("Player Error H")
             else:
                 print("\nno players\n")
                 print(calculatedDict)
@@ -480,12 +483,12 @@ def GetPlayers(playerIndex : int):
             players.append(Player(playerIndex, colour, i, calculatedIndex, calculatedID))
     return playerIndex
 
-def AddFailedReplay(replay, fRS = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\Database\failedReplays.txt"):
+def AddFailedReplay(replay, fRS = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\failedReplays.txt"):
     fRFile = open(fRS, "a")
     fRFile.write(str(replay))
     fRFile.write("\n")
     fRFile.close()
-def HandleReplay(replay, ballchasingAPI, matchIndex, playerIndex, cur, dbConn):
+def HandleReplay(replay, ballchasingAPI, matchIndex, playerIndex, cur, dbConn, tags = []):
     global ballchasingDict
     global calculatedDict
     global players
@@ -512,7 +515,7 @@ def HandleReplay(replay, ballchasingAPI, matchIndex, playerIndex, cur, dbConn):
     except BufferError as e:
         AddFailedReplay(replay)
         print(f"replay failed, could not get players: {e}")
-        return matchIndex - 1, originalPlayerIndex, True
+        return matchIndex - 1, originalPlayerIndex, "player"
     #print("\n" * 5)
     try:
         #print(calculatedDict["gameMetadata"]["goals"])
@@ -528,6 +531,9 @@ def HandleReplay(replay, ballchasingAPI, matchIndex, playerIndex, cur, dbConn):
         print("cannot get goal sequence data")
         print(e)
     matchData.append(DataPoint("matchTable", "startPlayerIndex", False, False, value = originalPlayerIndex + 1))
+    tagsLst = ["replayTagOne", "replayTagTwo", "replayTagThree", "replayTagFour", "replayTagFive"]
+    for i in range(len(tags)):
+        matchData.append(DataPoint("matchTable", tagsLst[i], False, False, value = tags[i]))
     try:
         cur.execute(f"""INSERT INTO matchTable ({','.join([x.databaseField for x in matchData])}) VALUES ({','.join([f'"{x.value}"' if type(x.value) == str else f"{str(x.value)}" for x in matchData])})""")
     except sqlite3.IntegrityError:
@@ -583,7 +589,7 @@ def HandleReplay(replay, ballchasingAPI, matchIndex, playerIndex, cur, dbConn):
                          value = dataPoint.value)
             newDataPoint.getValue()
             if dataPoint.databaseField == "pName":
-                newDataPoint.value = newDataPoint.value.replace('"', "'")
+                newDataPoint.value = str(newDataPoint.value).replace('"', "'")
             player.dataPoints.append(newDataPoint) 
         
         
@@ -597,7 +603,7 @@ def HandleReplay(replay, ballchasingAPI, matchIndex, playerIndex, cur, dbConn):
     dbConn.commit()
     return matchIndex, playerIndex, False
 
-def main(replayFolder = r"C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\\"):
+def main(replayFolder = r"C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\\", tags = []):
     global ballchasingDict
     global calculatedDict
     global players
@@ -836,8 +842,11 @@ def main(replayFolder = r"C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod
         renameFile = renameFile.replace(".replay", "")
         renameFile += f"-{matchIndex}"
         renameFile += ".replay"
-        if error:
+        if error == True:
             move(file, errorFolder + renameFile)
+        elif error == "player":
+            move(file, errorFolder + "playerError\\" + renameFile)
+            print("major player error")
         else:
             move(file, processedReplayFolder + renameFile)
         print("Sleeping")
@@ -848,7 +857,7 @@ def main(replayFolder = r"C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod
         newReplay = GetLatestReplay(replayFolder)
         if latestReplay != newReplay or debugMode:
             latestReplay = newReplay
-            matchIndex, playerIndex = HandleReplay(latestReplay, ballchasingAPI, matchIndex, playerIndex, cur, dbConn)  
+            matchIndex, playerIndex = HandleReplay(latestReplay, ballchasingAPI, matchIndex, playerIndex, cur, dbConn, tags = tags)  
         if debugMode: return
         sleep(5)
 
@@ -856,10 +865,10 @@ continueThruError = True
 pauseOnError = True
 
 
-
+tags = []
 while True:
     try:
-        main()
+        main(tags = tags)
     except ZeroDivisionError:
         pass
     #except Exception as e:

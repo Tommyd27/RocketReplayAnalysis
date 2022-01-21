@@ -382,7 +382,7 @@ class ReplayAnalysis:
         print(f"SQLite3 Version: {sqlite3.version}")
     def GetReplay(self, replayID, getTeams = True):
         if replayID < 0:
-            executeSTR = f"SELECT replayID FROM matchTable ORDER BY replayID DESC;"
+            executeSTR = f"SELECT matchID FROM matchTable ORDER BY matchID DESC;"
             self.c.execute(executeSTR)
             replayID *= -1
             replayID = self.c.fetchmany(replayID)[replayID - 1][0]

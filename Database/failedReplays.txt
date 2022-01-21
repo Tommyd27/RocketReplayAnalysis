@@ -842,3 +842,61 @@ C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2021-11-08
 C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2021-11-18.19.38 Tommy Ranked Standard Win 2021-11-18-19-38-403.replay
 C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2021-11-23.20.29 Tommy Ranked Duel Win 2021-11-23-20-29-403.replay
 C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2021-12-18.20.23 Tommy Ranked Duel Win 2021-12-18-20-23-403.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.18.35 Tommy Ranked Doubles Win 2022-01-02-18-35.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.18.44 Tommy Ranked Doubles Loss 2022-01-02-18-44.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.19.04 Tommy Ranked Standard Loss 2022-01-02-19-04.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.19.19 Tommy Ranked Doubles Win 2022-01-02-19-19.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.19.24 Tommy Ranked Doubles Win 2022-01-02-19-24.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.19.30 Tommy Ranked Doubles Win 2022-01-02-19-30.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.19.37 Tommy Ranked Doubles Win 2022-01-02-19-37.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.19.44 Tommy Ranked Doubles Loss 2022-01-02-19-44.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.19.52 Tommy Ranked Doubles Loss 2022-01-02-19-52.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.19.58 Tommy Ranked Doubles Loss 2022-01-02-19-58.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.20.46 Scarily Bad Ranked Doubles Win 2022-01-02-20-46.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.20.53 Scarily Bad Ranked Standard Win 2022-01-02-20-53.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.21.00 Bad Scarily Ranked Rumble Loss 2022-01-02-21-00.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.21.09 Scum Kad Ranked Rumble Win 2022-01-02-21-09.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.21.16 Scum Kad Ranked Rumble Win 2022-01-02-21-16.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-02.21.25 Scum Kad Ranked Rumble Win 2022-01-02-21-25.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.17.56 Tommy Ranked Duel Win 2022-01-03-17-56.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.18.04 Tommy Ranked Duel Loss 2022-01-03-18-04.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.18.18 Tommy Ranked Duel Win 2022-01-03-18-18.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.18.28 Scum Kad Ranked Rumble Win 2022-01-03-18-28.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.18.36 Scum Kad Ranked Rumble Win 2022-01-03-18-36.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.18.44 Scum Kad Ranked Rumble Win 2022-01-03-18-44.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.18.50 Scum Kad Ranked Rumble Win 2022-01-03-18-50.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.18.56 Scum Kad Ranked Rumble Win 2022-01-03-18-56.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.19.04 Scum Kad Ranked Rumble Loss 2022-01-03-19-04.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.19.13 Scum Kad Ranked Doubles Win 2022-01-03-19-13.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.19.19 Scum Kad Ranked Doubles Loss 2022-01-03-19-19.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.19.27 Scum Kad Ranked Doubles Loss 2022-01-03-19-27.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.23.18 Tommy Ranked Doubles Win 2022-01-03-23-18.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.23.20 Tommy Ranked Doubles Win 2022-01-03-23-20.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.23.27 Tommy Ranked Doubles Loss 2022-01-03-23-27.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.23.36 Tommy Ranked Doubles Loss 2022-01-03-23-36.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-03.23.47 Tommy Ranked Doubles Loss 2022-01-03-23-47.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.16.24 Tommy Ranked Doubles Win 2022-01-04-16-24.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.16.31 Tommy Ranked Duel Win 2022-01-04-16-31.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.17.15 Tommy Ranked Duel Loss 2022-01-04-17-15.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.17.19 Tommy Ranked Doubles Win 2022-01-04-17-19.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.17.26 Tommy Ranked Doubles Loss 2022-01-04-17-26.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.17.39 Tommy Ranked Standard Win 2022-01-04-17-39.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.17.47 Tommy Ranked Standard Win 2022-01-04-17-47.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.17.55 Tommy Ranked Standard Loss 2022-01-04-17-55.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.17.59 Tommy Ranked Duel Win 2022-01-04-17-59.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.18.05 Tommy Ranked Duel Loss 2022-01-04-18-05.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.18.13 Tommy Ranked Doubles Loss 2022-01-04-18-13.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.18.19 Tommy Ranked Standard Win 2022-01-04-18-19.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.18.30 Tommy Ranked Standard Win 2022-01-04-18-30.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.18.37 Tommy Ranked Standard Win 2022-01-04-18-37.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.18.46 Tommy Ranked Standard Win 2022-01-04-18-46.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.18.52 Tommy Ranked Standard Win 2022-01-04-18-52.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.18.58 Tommy Ranked Standard Win 2022-01-04-18-58.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.19.08 Tommy Ranked Standard Win 2022-01-04-19-08.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.19.14 Tommy Ranked Standard Win 2022-01-04-19-14.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.19.21 Tommy Ranked Standard Loss 2022-01-04-19-21.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.19.26 Tommy Ranked Standard Win 2022-01-04-19-26.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-04.19.31 Tommy Ranked Standard Loss 2022-01-04-19-31.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-07.18.22 DribblingBuku Ranked Doubles Win 2022-01-07-18-22.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-15.14.19 Tommy Ranked Duel Loss 2022-01-15-14-19.replay
+C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod\\data\\replays\2022-01-21.18.36 Tommy Ranked Doubles Loss 2022-01-21-18-36.replay
