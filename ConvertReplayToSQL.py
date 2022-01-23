@@ -852,7 +852,7 @@ def main(replayFolder = r"C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod
         print("Sleeping")
         sleep(0.5)
 
-
+    latestReplay = GetLatestReplay(replayFolder)
     while True:
         newReplay = GetLatestReplay(replayFolder)
         if latestReplay != newReplay or debugMode:
@@ -865,7 +865,7 @@ continueThruError = True
 pauseOnError = True
 
 
-tags = []
+tags = ["bigfoot"]
 while True:
     try:
         main(tags = tags)

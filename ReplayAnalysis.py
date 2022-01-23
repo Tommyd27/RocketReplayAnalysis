@@ -511,10 +511,6 @@ class ReplayAnalysis:
                             nIndex = nodesAll.index(node.v)
 
                             node.pos = (nIndex, len(nodesAll))
-
-
-
-
                         else:
                             raise NotImplementedError(f"What type: {type}")
                     case _:
@@ -708,5 +704,5 @@ class ReplayGUI:
         s.idEntry.destroy()
         s.idButton.destroy()
 
-
-gui = ReplayGUI()
+if __name__ == "__main__":
+    gui = ReplayGUI()

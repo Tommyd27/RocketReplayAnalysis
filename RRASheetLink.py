@@ -25,7 +25,7 @@ class Cell:
         self.o = overwrite
 
 class RRAProject:
-    def __init__(self, sheet, cells, tags, pageIndex, replayTargets = 0, indexCol = 1) -> None:
+    def __init__(self, sheet, cells, tags, pageIndex, replayTargets = 0, indexCol = 1, iteratePlayers = False, ignorePlayers = None) -> None:
         if sheet:
             self.s = sheet
         else:
@@ -38,7 +38,8 @@ class RRAProject:
         self.p = pageIndex
         self.t = tags
         self.iC = indexCol
-
+        self.iP = iteratePlayers
+        self.iPlayers = ignorePlayers
 
 class RRALink:
     def __init__(s, lDB) -> None:
@@ -62,39 +63,52 @@ class RRALink:
             while True:
                 s.c.execute(f"SELECT matchID FROM matchTable ORDER BY matchID DESC;")
                 newID = s.c.fetchone()[0]
-                if latestID != newID:
+                if True:#latestID != newID:
                     latestID = newID
+                    latestID = 1140
                     s.c.execute(f"SELECT * FROM matchTable WHERE matchID = {latestID};")
-                    match = s.c.fetchone()[0]
+                    match = s.c.fetchone()
                     if p.rPl:
                         s.c.execute(f"SELECT * FROM playerMatchTable WHERE matchID = {latestID};")
                         players = s.c.fetchall()
                     if p.rTm:
                         raise NotImplementedError("Required Teams Not Implemented")
-                    for cell in p.c:
-                        cell : Cell
-                        if cell.l == "Match":
-                            value = match[Match.allNodes.index(cell.n)]
-                            if cell.y == -1:
-                                y = len(s.Sheets.p.col_values(p.iC)) + 1
-                            else:
-                                y = cell.y
-                            if cell.o:
-                                s.Sheets.p.update_cell(y, cell.x, value)
-                            else:
-                                if not s.Sheets.p.cell(y, cell.x).value:
-                                    s.Sheets.p.update_cell(y, cell.x, value)
-                        else:
-                            for player in players:
-                                value = player[Player.allNodes.index(cell.n)]
-                                if cell.y == -1:
-                                    y = len(s.Sheets.p.col_values(p.iC)) + 1
-                                else:
-                                    y = cell.y
-                                if cell.o:
-                                    s.Sheets.p.update_cell(y, cell.x, value)
-                                else:
-                                    if not s.Sheets.p.cell(y, cell.x).value:
-                                        s.Sheets.p.update_cell(y, cell.x, value)
+                    if p.iP:
+                        for player in players:
+                            if p.iPlayers:
+                                if player[3] in p.iPlayers:
+                                    continue
+                            for cell in p.c:
+                                s.PlaceCell(cell, match, p.iC, player)
+                    else:
+                        for cell in p.c:
+                            s.PlaceCell(cell, match, p.iC)
+                break              
         else:
             pass
+    def PlaceCell(s, cell, match, iC, player = []):
+        try:
+            if cell.l == "Match":
+                value = match[Match.allNodes.index(cell.n)]
+            else:
+                value = player[Player.allNodes.index(cell.n)]
+            if cell.y == -1:
+                y = len(s.Sheets.p.col_values(iC)) + (1 if cell.x == iC else 0)
+            else:
+                y = cell.y
+            if cell.o:
+                s.Sheets.p.update_cell(y, cell.x, value)
+            else:
+                if not s.Sheets.p.cell(y, cell.x).value:
+                    
+                    s.Sheets.p.update_cell(y, cell.x, value)
+            #print(f"Value: {value}\nX: {cell.x}\nY: {y}\n")
+        except gspread.exceptions.APIError as e:
+            print(f"Limit Error: {e}")
+            sleep(30)
+            s.PlaceCell(cell, match, iC, player)
+project = RRAProject(None, [Cell(1, -1, "matchID"),
+                            Cell(2, -1, "playerID", location = "Player"),
+                            Cell(3, -1, "pName", location = "Player")], [], 0, iteratePlayers = True, ignorePlayers = ["76561198142849050"])
+link = RRALink(True)
+link.PerformProject(project)
