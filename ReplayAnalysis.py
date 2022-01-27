@@ -314,7 +314,8 @@ class Team:
             #for node in Team.analysisNodes:
             #    self.nodes[node.n] = None
 class TeamHistoric(Team):
-    pass 
+    if True:
+        pass 
 class Match:
     allNodes = ["matchID", "gameID", "replayName", "ballchasingLink", "map", "matchType", 
                 "teamSize", "playlistID", "durationCalculated", "durationBallchasing", 
