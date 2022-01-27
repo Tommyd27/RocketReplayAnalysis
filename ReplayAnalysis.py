@@ -610,6 +610,33 @@ class ReplayGUI:
             teamsNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in teamsNodes]
 
         s.GenerateAnalysedNodesGUI(matchNodes, playersNodes, teamsNodes, analysisType, players, teams)
+    def CreateTree(s, values, window, aType, columnIDs = ("name", "tag", "relevancy", "accountForDuplicates", "percentage",
+                               "rawValue", "value", "rawRelevancy", "calculatedRelevancy", "pos"), 
+                              columnNames = ("Name", "Tag", "Relevancy", "Account for Duplicates", "Percentage",
+                               "Raw Value", "Value", "Raw Relevancy", "Calculated Relevancy", "Position"),
+                              columnWidths = (120, 100, 70, 70, 100, 100, 100, 100, 120, 100),
+                              selfOrList = False):
+        tree = ttk.Treeview(window, columns = columnIDs, show = "headings")
+
+        tree.grid(column = 0, row = 0)
+
+        scrollBar = ttk.Scrollbar(window, orient = tk.VERTICAL, command = tree.yview)
+
+        tree.configure(yscroll = s.mVerticalScrollBar.set)
+
+        scrollBar.grid(column = 1, row = 0)
+
+        for i in range(len(columnIDs)):
+            s.matchTree.heading(columnIDs[i], text = columnNames[i])
+            s.matchTree.column(s.matchTree["columns"][i], width = columnWidths[i])
+        for node in values:
+            values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR, node.pos]
+            values = [round(x, 2) if isinstance(x, float) else x for x in values]
+             
+            tree.insert("", tk.END, values = values)
+        
+        return tree, scrollBar
+
     def GenerateAnalysedNodesGUI(s, mNodes, pNodes, tNodes, aType, players, teams):
         s.DeleteIDEntries()
 
