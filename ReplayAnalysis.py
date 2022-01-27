@@ -237,7 +237,10 @@ class Player:
                 node.v = node.default          
             
             self.nodes[node.n] = node
-            
+
+class PlayerHistoric(Player):
+    pass
+
 class Team:
     analysisNodes = [AnalysisNode("maxLead", "lead", 0),
                      AnalysisNode("maxDeficit", "lead", 0),
@@ -310,7 +313,8 @@ class Team:
             pass
             #for node in Team.analysisNodes:
             #    self.nodes[node.n] = None
-            
+class TeamHistoric(Team):
+    pass 
 class Match:
     allNodes = ["matchID", "gameID", "replayName", "ballchasingLink", "map", "matchType", 
                 "teamSize", "playlistID", "durationCalculated", "durationBallchasing", 
@@ -399,7 +403,7 @@ class ReplayAnalysis:
             return Match(matchDetails), players, [Team([x for x in players if x.pList[8] == "blue"], matchDetails), Team([x for x in players if x.pList[8] == "orange"], matchDetails)]
         else:
             return Match(matchDetails), [Player(x, matchDetails) for x in players]
-    def LoadReplays(self, tagsToLoad = None, num = -1, loadTeams = True):
+    def LoadReplays(self, tagsToLoad = None, num = -1, loadTeams = True, instantiateHistoricPlayers = True, instantiateHistoricTeams = True):
         tagsSTR = ""
         if tagsToLoad:
             tagsSTR = f""" WHERE {'and'.join([f'{x[0]} = "{x[1]}"' if isinstance(x[1], str) else f'{x[0]} = {x[1]}' for x in tagsToLoad])}"""
@@ -446,6 +450,10 @@ class ReplayAnalysis:
             self.teams = []
             for team in self.teamsPlayers:
                 self.teams.append(Team(team, team[0].mL))
+        if instantiateHistoricPlayers:
+            pass
+        if instantiateHistoricTeams:
+            pass
     def AnalyseNode(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
         #type : top%, average
         debugNodesList = nodesList
@@ -679,7 +687,7 @@ class ReplayGUI:
 
             teamColour = teams[i].players[0].pList[8]
             s.tabParent.add(teamTab, text = teamColour)
-            
+
         s.tabParent.grid(column = 0, row = 0)
 
         
