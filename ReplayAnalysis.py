@@ -610,12 +610,12 @@ class ReplayGUI:
             teamsNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in teamsNodes]
 
         s.GenerateAnalysedNodesGUI(matchNodes, playersNodes, teamsNodes, analysisType, players, teams)
+    
     def CreateTree(s, values, window, aType, columnIDs = ("name", "tag", "relevancy", "accountForDuplicates", "percentage",
                                "rawValue", "value", "rawRelevancy", "calculatedRelevancy", "pos"), 
                               columnNames = ("Name", "Tag", "Relevancy", "Account for Duplicates", "Percentage",
                                "Raw Value", "Value", "Raw Relevancy", "Calculated Relevancy", "Position"),
-                              columnWidths = (120, 100, 70, 70, 100, 100, 100, 100, 120, 100),
-                              selfOrList = False):
+                              columnWidths = (120, 100, 70, 70, 100, 100, 100, 100, 120, 100)):
         tree = ttk.Treeview(window, columns = columnIDs, show = "headings")
 
         tree.grid(column = 0, row = 0)
@@ -653,43 +653,17 @@ class ReplayGUI:
                                "Raw Value", "Value", "Raw Relevancy", "Calculated Relevancy", "Position")
         analysisNodeColumnsWidth = (120, 100, 70, 70, 100, 100, 100, 100, 120, 100)
         print("Creating Tree")
-        s.matchTree = ttk.Treeview(s.matchTab, columns = analysisNodeColumnsIDs, show = "headings")
+        s.matchTree, s.matchScrollBar = s.CreateTree(mNodes, s.matchTab, aType)
 
-        s.matchTree.grid(column = 0, row = 0)
-        s.mVerticalScrollBar = ttk.Scrollbar(s.matchTab, orient = tk.VERTICAL, command = s.matchTree.yview)
-        s.matchTree.configure(yscroll = s.mVerticalScrollBar.set)
-        s.mVerticalScrollBar.grid(row = 0, column = 1)
-
-        for i in range(len(analysisNodeColumnsIDs)):
-            s.matchTree.heading(analysisNodeColumnsIDs[i], text = analysisNodeColumnsName[i])
-            s.matchTree.column(s.matchTree["columns"][i], width = analysisNodeColumnsWidth[i])
-        for node in mNodes:
-            values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR, node.pos]
-            values = [round(x, 2) if isinstance(x, float) else x for x in values]
-             
-            s.matchTree.insert("", tk.END, values = values)
         s.tabParent.add(s.matchTab, text= "Match")
 
 
         s.playerTrees = []
         s.playerScrollBars = []
         for i, playerTab in enumerate(s.playerTabs):
-            playerTree = ttk.Treeview(playerTab, columns = analysisNodeColumnsIDs, show = "headings")
-            playerTree.grid(column = 0, row = 0)
-            playerVerticalScrollBar = ttk.Scrollbar(playerTab, orient = tk.VERTICAL, command = playerTree.yview)
-            playerTree.configure(yscroll = playerVerticalScrollBar.set)
-            playerVerticalScrollBar.grid(row = 0, column = 1)
-
-            for j in range(len(analysisNodeColumnsIDs)):
-                playerTree.heading(analysisNodeColumnsIDs[j], text = analysisNodeColumnsName[j])
-                playerTree.column(s.matchTree["columns"][j], width = analysisNodeColumnsWidth[j])
-            for node in pNodes[i]:
-                values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR, node.pos]
-                values = [round(x, 2) if isinstance(x, float) else x for x in values]
-                
-                playerTree.insert("", tk.END, values = values)
+            playerTree, scrollBar = s.CreateTree(pNodes[i], playerTab, aType)
             s.playerTrees.append(playerTree)
-            s.playerScrollBars.append(playerVerticalScrollBar)
+            s.playerScrollBars.append(scrollBar)
 
             name = players[i].pList[3]
             s.tabParent.add(playerTab, text = name)
@@ -698,31 +672,14 @@ class ReplayGUI:
         s.teamTrees = []
         s.teamScrollBars = []
         for i, teamTab in enumerate(s.teamTabs):
-            teamTree = ttk.Treeview(teamTab, columns = analysisNodeColumnsIDs, show = "headings")
-            teamTree.grid(column = 0, row = 0)
-            teamVerticalScrollBar = ttk.Scrollbar(teamTab, orient = tk.VERTICAL, command = teamTree.yview)
-            teamTree.configure(yscroll = teamVerticalScrollBar.set)
-            teamVerticalScrollBar.grid(row = 0, column = 1)
-
-            for j in range(len(analysisNodeColumnsIDs)):
-                teamTree.heading(analysisNodeColumnsIDs[j], text = analysisNodeColumnsName[j])
-                teamTree.column(s.matchTree["columns"][j], width = analysisNodeColumnsWidth[j])
-            for node in tNodes[i]:
-                tValues = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR, node.pos]
-                tValues = [round(x, 2) if isinstance(x, float) else x for x in tValues]
-                
-                teamTree.insert("", tk.END, values = tValues)
+            teamTree, scrollBar = s.CreateTree(tNodes[i], teamTab, aType)
             s.teamTrees.append(teamTree)
-            s.teamScrollBars.append(teamVerticalScrollBar)
+            s.teamScrollBars.append(scrollBar)
+
+
             teamColour = teams[i].players[0].pList[8]
             s.tabParent.add(teamTab, text = teamColour)
-
-
-
-        
-
-
-
+            
         s.tabParent.grid(column = 0, row = 0)
 
         
