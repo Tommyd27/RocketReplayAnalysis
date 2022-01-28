@@ -607,7 +607,8 @@ def main(replayFolder = r"C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod
     global ballchasingDict
     global calculatedDict
     global players
-
+    print(f"Main")
+    updateOldReplays = False
     dbConn = CreateConnection(databaseFolder + databaseName)
     cur = dbConn.cursor()
     
@@ -827,35 +828,38 @@ def main(replayFolder = r"C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod
 
     sortedFiles = list(filter(path.isfile, glob(replayFolder + "\*replay")))
     sortedFiles.sort(key=lambda x: path.getmtime(x))
-    for file in sortedFiles:
-        try:
-            matchIndex, playerIndex, error = HandleReplay(file, ballchasingAPI, matchIndex, playerIndex, cur, dbConn)
-        except ZeroDivisionError:
-            print("zero division error?")
-        except ExecError:#Exception as e:
-            print(f"Error as E: {e} {type(e)}")
-            if pauseOnError: input()
-            AddFailedReplay(file)
-            error = True
-            
-        renameFile = file.split('\\'[0])[-1]
-        renameFile = renameFile.replace(".replay", "")
-        renameFile += f"-{matchIndex}"
-        renameFile += ".replay"
-        if error == True:
-            move(file, errorFolder + renameFile)
-        elif error == "player":
-            move(file, errorFolder + "playerError\\" + renameFile)
-            print("major player error")
-        else:
-            move(file, processedReplayFolder + renameFile)
-        print("Sleeping")
-        sleep(0.5)
+    if updateOldReplays:
+        for file in sortedFiles:
+            try:
+                matchIndex, playerIndex, error = HandleReplay(file, ballchasingAPI, matchIndex, playerIndex, cur, dbConn)
+            except ZeroDivisionError:
+                print("zero division error?")
+            except ExecError:#Exception as e:
+                print(f"Error as E: {e} {type(e)}")
+                if pauseOnError: input()
+                AddFailedReplay(file)
+                error = True
+                
+            renameFile = file.split('\\'[0])[-1]
+            renameFile = renameFile.replace(".replay", "")
+            renameFile += f"-{matchIndex}"
+            renameFile += ".replay"
+            if error == True:
+                move(file, errorFolder + renameFile)
+            elif error == "player":
+                move(file, errorFolder + "playerError\\" + renameFile)
+                print("major player error")
+            else:
+                move(file, processedReplayFolder + renameFile)
+            print("Sleeping")
+            sleep(0.5)
 
     latestReplay = GetLatestReplay(replayFolder)
     while True:
         newReplay = GetLatestReplay(replayFolder)
+        print("Checking for new Replay")
         if latestReplay != newReplay or debugMode:
+            print(f"New Replay {newReplay}")
             latestReplay = newReplay
             matchIndex, playerIndex = HandleReplay(latestReplay, ballchasingAPI, matchIndex, playerIndex, cur, dbConn, tags = tags)  
         if debugMode: return
@@ -865,7 +869,8 @@ continueThruError = True
 pauseOnError = True
 
 
-tags = ["bigfoot"]
+tags = ["bigbird"]
+print(f"Running with Tags: {tags}")
 while True:
     try:
         main(tags = tags)

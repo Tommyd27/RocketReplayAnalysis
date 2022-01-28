@@ -25,7 +25,7 @@ class Cell:
         self.o = overwrite
 
 class RRAProject:
-    def __init__(self, sheet, cells, tags, pageIndex, replayTargets = 0, indexCol = 1, iteratePlayers = False, ignorePlayers = None) -> None:
+    def __init__(self, sheet, cells, tags, pageIndex, replayTargets = 0, indexCol = 1, iteratePlayers = False, ignorePlayers = None, name = "Default") -> None:
         if sheet:
             self.s = sheet
         else:
@@ -40,6 +40,7 @@ class RRAProject:
         self.iC = indexCol
         self.iP = iteratePlayers
         self.iPlayers = ignorePlayers
+        self.name = name
 
 class RRALink:
     def __init__(s, lDB) -> None:
@@ -54,6 +55,7 @@ class RRALink:
         s.c = s.conn.cursor()
         print(f"SQLite3 Version: {sqlite3.version}")
     def PerformProject(s, p : RRAProject):
+        print(f"Performing Project {p.name}")
         s.Sheets.SetSheet(p.s)
         s.Sheets.SetPage(p.p)
         if p.rT == 0:
@@ -63,9 +65,10 @@ class RRALink:
             while True:
                 s.c.execute(f"SELECT matchID FROM matchTable ORDER BY matchID DESC;")
                 newID = s.c.fetchone()[0]
-                if True:#latestID != newID:
+                print("Checking for new entry")
+                if latestID != newID:
+                    print("New Entry")
                     latestID = newID
-                    latestID = 1140
                     s.c.execute(f"SELECT * FROM matchTable WHERE matchID = {latestID};")
                     match = s.c.fetchone()
                     if p.rPl:
@@ -83,7 +86,8 @@ class RRALink:
                     else:
                         for cell in p.c:
                             s.PlaceCell(cell, match, p.iC)
-                break              
+                    print("Finished")
+                sleep(5)              
         else:
             pass
     def PlaceCell(s, cell, match, iC, player = []):
@@ -109,6 +113,6 @@ class RRALink:
             s.PlaceCell(cell, match, iC, player)
 project = RRAProject(None, [Cell(1, -1, "matchID"),
                             Cell(2, -1, "playerID", location = "Player"),
-                            Cell(3, -1, "pName", location = "Player")], [], 0, iteratePlayers = True, ignorePlayers = ["76561198142849050"])
+                            Cell(3, -1, "pName", location = "Player")], [], 0, iteratePlayers = True, ignorePlayers = ["76561198142849050"], name = "BigBird")
 link = RRALink(True)
 link.PerformProject(project)
