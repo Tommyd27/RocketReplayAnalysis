@@ -1,10 +1,9 @@
 import sqlite3
-from sqlite3.dbapi2 import Error
 import tkinter as tk
 
+from collections import Counter
 from tkinter import ttk
-import tkinter
-from typing import List, Type
+
 
 class AnalysisNode:
     def __init__(self, name, tag, analysisType, relevancy = {}, percentage = False, calculation = False, accountForDuplicates = True, punishDuplicates = False, teamStat = True, index = -1, default = -1, percentageAccountForValue = False) -> None:
@@ -145,7 +144,7 @@ class Player:
                     AnalysisNode('assists', 'core', 0, index = retrievalNodes.index("assists")),
                     AnalysisNode('saves', 'core', 0, index = retrievalNodes.index("saves")),
                     AnalysisNode('shots', 'core', 0, index = retrievalNodes.index("shots")),
-                    AnalysisNode('mvp', 'core', 0, index = retrievalNodes.index("mvp"), punishDuplicates = True),
+                    AnalysisNode('mvp', 'core', 1, index = retrievalNodes.index("mvp"), punishDuplicates = True),
                     AnalysisNode('shootingP', 'offense', 0, index = retrievalNodes.index("shootingP")),
                     AnalysisNode('totalHits', 'playstyle', 0, index = retrievalNodes.index("totalHits")),
                     AnalysisNode('totalPasses', 'playstyle', 0, index = retrievalNodes.index("totalPasses")),
@@ -239,7 +238,40 @@ class Player:
             self.nodes[node.n] = node
 
 class PlayerHistoric(Player):
-    pass
+    countForHistoric = 3
+    def __init__(s, players, intensiveStats = False):
+        s.players = players
+        s.n = {}
+        s.nApp = len(players)
+        s.iS = intensiveStats
+        for stat in PlayerHistoric.analysisNodes:
+            match stat.aT:
+                case 0:
+                    aList = [x.nodes[stat.n].v for x in players if stat.n in x.nodes]
+                    aSum = sum(aList)
+                    aAvg = aSum / len(aList)
+                    aMin = min(aSum)
+                    aMax = max(aSum)
+                    s.n[stat.n] = [aAvg, aMin, aMax]
+                case [1, 2]:
+                    allValues = [p[stat.n] for p in players]
+                    s.n[stat.n] = Counter(allValues)
+                    
+        if intensiveStats:
+            allIDs = [x.mL[0] for x in players]
+            allPlayers = [x for x in intensiveStats if x.mL[0] in allIDs]
+
+            s.aN = {}
+
+            for stat in PlayerHistoric.analysisNodes:
+                if stat.aT != 0:
+                    continue
+                otherPStats = [x.nodes[stat.n].v for x in allPlayers]
+                aAvg = sum(otherPStats) / len(otherPStats)
+                s.aN[stat.n] = aAvg
+
+                    
+            
 
 class Team:
     analysisNodes = [AnalysisNode("maxLead", "lead", 0),
@@ -311,11 +343,9 @@ class Team:
                 self.nodes[node.n] = node
         else:
             pass
-            #for node in Team.analysisNodes:
-            #    self.nodes[node.n] = None
+
 class TeamHistoric(Team):
-    if True:
-        pass 
+    countForHistoric = 3 
 class Match:
     allNodes = ["matchID", "gameID", "replayName", "ballchasingLink", "map", "matchType", 
                 "teamSize", "playlistID", "durationCalculated", "durationBallchasing", 
@@ -451,8 +481,26 @@ class ReplayAnalysis:
             self.teams = []
             for team in self.teamsPlayers:
                 self.teams.append(Team(team, team[0].mL))
+        
         if instantiateHistoricPlayers:
-            pass
+            self.historicPlayers = []
+            playersDict = {}
+            for player in self.players:
+                id = player.pL[1]
+                if id in playersDict:
+                    playersDict[id] += 1
+                else:
+                    playersDict[id] = 1
+            historicDict = {}
+            for player in self.players:
+                id = player.pL[1]
+                if playersDict[id] >= PlayerHistoric.countForHistoric:
+                    if id in historicDict:
+                        historicDict[id].append(player)
+                    else:
+                        historicDict[id] = [player]
+            for hPlayer in historicDict:
+                self.historicPlayers.append(PlayerHistoric(hPlayer))
         if instantiateHistoricTeams:
             pass
     def AnalyseNode(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
