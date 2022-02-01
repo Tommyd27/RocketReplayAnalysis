@@ -41,7 +41,7 @@ class AnalysisNode:
         return output
 
 class Player:
-    allNodes = ["playerID", "match", "gameID", "pBallchasingID", "pCalculatedId", "pName", "pPlatform", "pTier", 
+    allNodes = ["playerID", "matchID", "gameID", "pBallchasingID", "pCalculatedId", "pName", "pPlatform", "pTier", 
                 "carName", "titleID", "teamColour", "bUsage", "bPerMinute", "bConsumptionPerMinute", "aAmount", 
                 "qCollected", "qStolen", "qCollectedBig", "qCollectedSmall", "qStolenBig", "qStolenSmall", "nCollectedBig", 
                 "nCollectedSmall", "nStolenBig", "nStolenSmall", "qOverfill", "qOverfillStolen", "qWasted", "tZeroBoost", "tFullBoost", 
@@ -249,9 +249,10 @@ class PlayerHistoric(Player):
                 case 0:
                     aList = [x.nodes[stat.n].v for x in players if stat.n in x.nodes]
                     aSum = sum(aList)
+
                     aAvg = aSum / len(aList)
-                    aMin = min(aSum)
-                    aMax = max(aSum)
+                    aMin = min(aList)
+                    aMax = max(aList)
                     s.n[stat.n] = [aAvg, aMin, aMax]
                 case [1, 2]:
                     allValues = [p[stat.n] for p in players]
@@ -269,10 +270,7 @@ class PlayerHistoric(Player):
                 otherPStats = [x.nodes[stat.n].v for x in allPlayers]
                 aAvg = sum(otherPStats) / len(otherPStats)
                 s.aN[stat.n] = aAvg
-
                     
-            
-
 class Team:
     analysisNodes = [AnalysisNode("maxLead", "lead", 0),
                      AnalysisNode("maxDeficit", "lead", 0),
@@ -346,6 +344,7 @@ class Team:
 
 class TeamHistoric(Team):
     countForHistoric = 3 
+
 class Match:
     allNodes = ["matchID", "gameID", "replayName", "ballchasingLink", "map", "matchType", 
                 "teamSize", "playlistID", "durationCalculated", "durationBallchasing", 
@@ -377,7 +376,6 @@ class Match:
     def __init__(self, matchList) -> None:
         self.mL = matchList
         self.nodes = {}
-
         analysisNodes = [x.copy() for x in Match.analysisNodes]
         for node in analysisNodes:
             node.rV = matchList[node.i]
@@ -404,8 +402,8 @@ class Match:
 
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, tagsToLoad = None):
-        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
         if loadReplays:
@@ -433,7 +431,7 @@ class ReplayAnalysis:
             players = [Player(x, matchDetails) for x in players]
             return Match(matchDetails), players, [Team([x for x in players if x.pList[8] == "blue"], matchDetails), Team([x for x in players if x.pList[8] == "orange"], matchDetails)]
         else:
-            return Match(matchDetails), [Player(x, matchDetails) for x in players]
+            return Match(matchDetails), [Player(x, matchDetails) for x in players]    
     def LoadReplays(self, tagsToLoad = None, num = -1, loadTeams = True, instantiateHistoricPlayers = True, instantiateHistoricTeams = True):
         tagsSTR = ""
         if tagsToLoad:
@@ -481,26 +479,40 @@ class ReplayAnalysis:
             self.teams = []
             for team in self.teamsPlayers:
                 self.teams.append(Team(team, team[0].mL))
-        
         if instantiateHistoricPlayers:
             self.historicPlayers = []
             playersDict = {}
             for player in self.players:
-                id = player.pL[1]
+                id = player.pList[0]
                 if id in playersDict:
                     playersDict[id] += 1
                 else:
                     playersDict[id] = 1
             historicDict = {}
             for player in self.players:
-                id = player.pL[1]
+                id = player.pList[0]
                 if playersDict[id] >= PlayerHistoric.countForHistoric:
                     if id in historicDict:
                         historicDict[id].append(player)
                     else:
                         historicDict[id] = [player]
             for hPlayer in historicDict:
-                self.historicPlayers.append(PlayerHistoric(hPlayer))
+                playerObjects = []
+                for id in hPlayer:
+                    try:
+                        self.c.execute(f"SELECT {', '.join(Player.retrievalNodes)} FROM playerMatchTable WHERE playerID = {id}")
+                    except:
+                        print(', '.join(Player.retrievalNodes))
+                        print(f"SELECT {', '.join(Player.retrievalNodes)} FROM playerMatchTable WHERE playerID = {id}")
+                        input()
+                    details = self.c.fetchone()
+
+                    self.c.execute(f"SELECT {', '.join(Match.retrievalNodes)} FROM matchTable WHERE matchID = {details[-1]}")
+
+                    mDetails = self.c.fetchone()
+
+                    playerObjects.append(Player(details, mDetails))
+                self.historicPlayers.append(PlayerHistoric(playerObjects))
         if instantiateHistoricTeams:
             pass
     def AnalyseNode(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
@@ -581,7 +593,7 @@ class ReplayAnalysis:
 
 class ReplayGUI:
     def __init__(s) -> None:
-        s.w = tkinter.Tk()
+        s.w = tk.Tk()
         s.w.title("Rocket Replay Analysis")
         s.w.geometry("1000x400")
 
