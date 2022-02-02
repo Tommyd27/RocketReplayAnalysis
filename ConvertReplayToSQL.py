@@ -861,7 +861,15 @@ def main(replayFolder = r"C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod
         if latestReplay != newReplay or debugMode:
             print(f"New Replay {newReplay}")
             latestReplay = newReplay
-            matchIndex, playerIndex = HandleReplay(latestReplay, ballchasingAPI, matchIndex, playerIndex, cur, dbConn, tags = tags)  
+            matchIndex, playerIndex, eType = HandleReplay(latestReplay, ballchasingAPI, matchIndex, playerIndex, cur, dbConn, tags = tags)  
+            if eType == "player":
+                print("player error")
+                input()
+            elif eType:
+                print("other error")
+                input()
+            else:
+                pass
         if debugMode: return
         sleep(5)
 
