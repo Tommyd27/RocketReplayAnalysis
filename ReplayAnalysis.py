@@ -1,10 +1,9 @@
 import sqlite3
-from sqlite3.dbapi2 import Error
 import tkinter as tk
 
+from collections import Counter
 from tkinter import ttk
-import tkinter
-from typing import List, Type
+
 
 class AnalysisNode:
     def __init__(self, name, tag, analysisType, relevancy = {}, percentage = False, calculation = False, accountForDuplicates = True, punishDuplicates = False, teamStat = True, index = -1, default = -1, percentageAccountForValue = False) -> None:
@@ -41,8 +40,31 @@ class AnalysisNode:
             output += f"\nPosition: {self.pos}"
         return output
 
+class HistoricalNode:
+    def __init__(s, name, relevancy, value, againstValue, index, analysisType) -> None:
+        s.n = name
+        s.r = relevancy
+        s.v = value
+        s.aV = againstValue
+        s.i = index
+        s.aT = analysisType
+        if s.aT == 0:
+            s.cR = value / againstValue
+            s.cR -= 0.5
+            s.cR *= relevancy
+        elif s.aT == 1:
+            againstValue : Counter
+            s.cR = againstValue[value] / len(againstValue)
+            s.cR -= 0.5
+            s.cR *= relevancy
+        elif s.aT == 2:
+            s.cR = againstValue[value] / len(againstValue)
+            s.cR *= relevancy
+        else:
+            print("cunt")
+
 class Player:
-    allNodes = ["playerID", "match", "gameID", "pBallchasingID", "pCalculatedId", "pName", "pPlatform", "pTier", 
+    allNodes = ["playerID", "matchID", "gameID", "pBallchasingID", "pCalculatedId", "pName", "pPlatform", "pTier", 
                 "carName", "titleID", "teamColour", "bUsage", "bPerMinute", "bConsumptionPerMinute", "aAmount", 
                 "qCollected", "qStolen", "qCollectedBig", "qCollectedSmall", "qStolenBig", "qStolenSmall", "nCollectedBig", 
                 "nCollectedSmall", "nStolenBig", "nStolenSmall", "qOverfill", "qOverfillStolen", "qWasted", "tZeroBoost", "tFullBoost", 
@@ -70,7 +92,7 @@ class Player:
                 "totalAerials", "totalClears", "isKeyboard", "tBallCam", "qCarries", "qFlicks", "totalCarryT", "totalCarryD", "aCarryT", "totalKickoffs", 
                 "numGoBoost", "numnGoFollow", "numGoBall", "numFirstTouch", "aBoostUsed", "fiftyWins", "fiftyLosses", "fiftyDraws", "isBot", "partyLeaderID", 
                 "ballchasingStartTime", "ballchasingEndTime", "ballchasingBoostTime", "ballchasingStatTime", "calculatedFirstFrame", "calculatedTimeInGame", "matchID"]
-    analysisNodes =[AnalysisNode('carName', '', 1, index = retrievalNodes.index("carName"), relevancy = {"top" : 0, "average" : 0}, teamStat = False), 
+    analysisNodes =[AnalysisNode('carName', '', 1, index = retrievalNodes.index("carName"), relevancy = {"top" : 0.1, "average" : 0.1}, teamStat = False), 
                     AnalysisNode('bUsage', 'boost', 0, index = retrievalNodes.index("bUsage")),
                     AnalysisNode('bPerMinute', 'boost', 0, index = retrievalNodes.index("bPerMinute")),
                     AnalysisNode('bConsumptionPerMinute', 'boost', 0, index = retrievalNodes.index("bConsumptionPerMinute")),
@@ -145,7 +167,7 @@ class Player:
                     AnalysisNode('assists', 'core', 0, index = retrievalNodes.index("assists")),
                     AnalysisNode('saves', 'core', 0, index = retrievalNodes.index("saves")),
                     AnalysisNode('shots', 'core', 0, index = retrievalNodes.index("shots")),
-                    AnalysisNode('mvp', 'core', 0, index = retrievalNodes.index("mvp"), punishDuplicates = True),
+                    AnalysisNode('mvp', 'core', 1, index = retrievalNodes.index("mvp"), punishDuplicates = True),
                     AnalysisNode('shootingP', 'offense', 0, index = retrievalNodes.index("shootingP")),
                     AnalysisNode('totalHits', 'playstyle', 0, index = retrievalNodes.index("totalHits")),
                     AnalysisNode('totalPasses', 'playstyle', 0, index = retrievalNodes.index("totalPasses")),
@@ -239,8 +261,43 @@ class Player:
             self.nodes[node.n] = node
 
 class PlayerHistoric(Player):
-    pass
+    countForHistoric = 3
+    def __init__(s, players, intensiveStats = False):
+        s.players = players
+        s.n = {}
+        s.nApp = len(players)
+        s.iS = intensiveStats
+        s.id = players[0].pList[0]
+        for stat in PlayerHistoric.analysisNodes:
+            match stat.aT:
+                case 0:
+                    aList = [x.nodes[stat.n].v for x in players if stat.n in x.nodes]
+                    aSum = sum(aList)
 
+                    aAvg = aSum / len(aList)
+
+                    s.n[stat.n] = [aAvg, aList]
+                case [1, 2]:
+                    allValues = [p[stat.n] for p in players if stat.n in p.nodes]
+                    s.n[stat.n] = Counter(allValues)
+                    
+        if intensiveStats:
+            allIDs = [x.mL[0] for x in players]
+            allPlayers = [x for x in intensiveStats if x.mL[0] in allIDs]
+
+            s.aN = {}
+
+            for stat in PlayerHistoric.analysisNodes:
+                if stat.aT != 0:
+                    continue
+                otherPStats = [x.nodes[stat.n].v for x in allPlayers]
+                aAvg = sum(otherPStats) / len(otherPStats)
+                s.aN[stat.n] = aAvg
+    def __eq__(self, o: object) -> bool:
+        if isinstance(o, PlayerHistoric):
+            return self.id == o.id
+        else:
+            return self.id == o
 class Team:
     analysisNodes = [AnalysisNode("maxLead", "lead", 0),
                      AnalysisNode("maxDeficit", "lead", 0),
@@ -311,11 +368,10 @@ class Team:
                 self.nodes[node.n] = node
         else:
             pass
-            #for node in Team.analysisNodes:
-            #    self.nodes[node.n] = None
+
 class TeamHistoric(Team):
-    if True:
-        pass 
+    countForHistoric = 3 
+
 class Match:
     allNodes = ["matchID", "gameID", "replayName", "ballchasingLink", "map", "matchType", 
                 "teamSize", "playlistID", "durationCalculated", "durationBallchasing", 
@@ -347,7 +403,6 @@ class Match:
     def __init__(self, matchList) -> None:
         self.mL = matchList
         self.nodes = {}
-
         analysisNodes = [x.copy() for x in Match.analysisNodes]
         for node in analysisNodes:
             node.rV = matchList[node.i]
@@ -374,8 +429,8 @@ class Match:
 
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, tagsToLoad = None):
-        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
         if loadReplays:
@@ -403,7 +458,7 @@ class ReplayAnalysis:
             players = [Player(x, matchDetails) for x in players]
             return Match(matchDetails), players, [Team([x for x in players if x.pList[8] == "blue"], matchDetails), Team([x for x in players if x.pList[8] == "orange"], matchDetails)]
         else:
-            return Match(matchDetails), [Player(x, matchDetails) for x in players]
+            return Match(matchDetails), [Player(x, matchDetails) for x in players]    
     def LoadReplays(self, tagsToLoad = None, num = -1, loadTeams = True, instantiateHistoricPlayers = True, instantiateHistoricTeams = True):
         tagsSTR = ""
         if tagsToLoad:
@@ -452,13 +507,47 @@ class ReplayAnalysis:
             for team in self.teamsPlayers:
                 self.teams.append(Team(team, team[0].mL))
         if instantiateHistoricPlayers:
-            pass
+            self.historicPlayers = []
+            playersDict = {}
+            for player in self.players:
+                id = player.pList[0]
+                if id in playersDict:
+                    playersDict[id] += 1
+                else:
+                    playersDict[id] = 1
+            historicDict = {}
+            for player in self.players:
+                id = player.pList[0]
+                if playersDict[id] >= PlayerHistoric.countForHistoric:
+                    if id in historicDict:
+                        historicDict[id].append(player)
+                    else:
+                        historicDict[id] = [player]
+            for hPlayer in historicDict:
+                playerObjects = []
+                for id in hPlayer:
+                    try:
+                        self.c.execute(f"SELECT {', '.join(Player.retrievalNodes)} FROM playerMatchTable WHERE playerID = {id}")
+                    except:
+                        print(', '.join(Player.retrievalNodes))
+                        print(f"SELECT {', '.join(Player.retrievalNodes)} FROM playerMatchTable WHERE playerID = {id}")
+                        input()
+                    details = self.c.fetchone()
+
+                    self.c.execute(f"SELECT {', '.join(Match.retrievalNodes)} FROM matchTable WHERE matchID = {details[-1]}")
+
+                    mDetails = self.c.fetchone()
+
+                    playerObjects.append(Player(details, mDetails))
+                self.historicPlayers.append(PlayerHistoric(playerObjects))
         if instantiateHistoricTeams:
             pass
     def AnalyseNode(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
         #type : top%, average
-        debugNodesList = nodesList
-        nodesList = self.__dict__[nodesList]
+        if isinstance(nodesList, str):
+            nodeType = nodesList
+            nodesList = self.__dict__[nodesList]
+
         matchTags = []
         if onlyTags == True:
             matchTags = analyseNode.mL[-6:-2]
@@ -526,6 +615,29 @@ class ReplayAnalysis:
                         node.rR = 0
                         node.cR = 0
                         node.pos = "N/A"
+        analyseNode.againstNodes = False
+        if nodeType == "Player":
+            if analyseNode.pList[0] in self.historicPlayers:
+                hPlayer = self.historicPlayers[self.historicPlayers.index(analyseNode.pList[0])]
+                analyseNode.againstNodes = []
+                for node in analyseNode.nodes.values():
+                    if node.aT == 0:
+                        nList = hPlayer.n[node.n][1]
+                        nList.append(node.v)
+                        sList = sorted(nList, reverse = True)
+
+                        nIndex = [sList.index(node.v) + 1, len(sList)]
+                        againstValues = hPlayer.n[node.n][0]
+                    else:
+                        nIndex = "n/a"
+                        againstValues = hPlayer.n[node.n]
+
+                    
+                    analyseNode.againstNodes.append(HistoricalNode(node.n, node.r[nodeType] if nodeType in node.r else 1, node.v, againstValues, nIndex, node.aT))
+
+        elif nodeType == "Team":
+            pass
+
         return analyseNode
     def AnalyseReplay(self, replayID):
         executeSTR = f"SELECT * FROM matchTable WHERE matchID = {replayID}"
@@ -533,7 +645,7 @@ class ReplayAnalysis:
 
 class ReplayGUI:
     def __init__(s) -> None:
-        s.w = tkinter.Tk()
+        s.w = tk.Tk()
         s.w.title("Rocket Replay Analysis")
         s.w.geometry("1000x400")
 
@@ -589,6 +701,10 @@ class ReplayGUI:
             playersNodes = [[x for x in y.nodes.values()] for y in playersAnalysed]
             playersNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in playersNodes]
 
+            playersHNodes = [[x for x in y.againstNodes] for y in playersAnalysed if y.againstNodes]
+            playersHIDs = [y.pList[3] for y in playersAnalysed if y.againstNodes]0
+            playersHNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in playersHNodes]
+
             teamsNodes = [[x for x in y.nodes.values()] for y in teamsAnalysed]
             teamsNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in teamsNodes]
         else:
@@ -615,16 +731,20 @@ class ReplayGUI:
             playersNodes = [[x for x in y.nodes.values()] for y in playersAnalysed]
             playersNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in playersNodes]
 
+            playersHNodes = [[x for x in y.againstNodes] for y in playersAnalysed if y.againstNodes]
+            playersHIDs = [y.pList[3] for y in playersAnalysed if y.againstNodes]
+            playersHNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in playersHNodes]
+
             teamsNodes = [[x for x in y.nodes.values()] for y in teamsAnalysed]
             teamsNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in teamsNodes]
 
-        s.GenerateAnalysedNodesGUI(matchNodes, playersNodes, teamsNodes, analysisType, players, teams)
+        s.GenerateAnalysedNodesGUI(matchNodes, playersNodes, teamsNodes, analysisType, players, teams, [playersHNodes, playersHIDs])
     
     def CreateTree(s, values, window, aType, columnIDs = ("name", "tag", "relevancy", "accountForDuplicates", "percentage",
                                "rawValue", "value", "rawRelevancy", "calculatedRelevancy", "pos"), 
                               columnNames = ("Name", "Tag", "Relevancy", "Account for Duplicates", "Percentage",
                                "Raw Value", "Value", "Raw Relevancy", "Calculated Relevancy", "Position"),
-                              columnWidths = (120, 100, 70, 70, 100, 100, 100, 100, 120, 100)):
+                              columnWidths = (120, 100, 70, 70, 100, 100, 100, 100, 120, 100), historical = False):
         tree = ttk.Treeview(window, columns = columnIDs, show = "headings")
 
         tree.grid(column = 0, row = 0)
@@ -639,28 +759,30 @@ class ReplayGUI:
             s.matchTree.heading(columnIDs[i], text = columnNames[i])
             s.matchTree.column(s.matchTree["columns"][i], width = columnWidths[i])
         for node in values:
-            values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR, node.pos]
+            if not historical:
+                values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR, node.pos]
+            else:
+                values = [node.n, node.r, node.v, node.aV, node.i, node.aT, node.cR]
             values = [round(x, 2) if isinstance(x, float) else x for x in values]
              
             tree.insert("", tk.END, values = values)
         
         return tree, scrollBar
 
-    def GenerateAnalysedNodesGUI(s, mNodes, pNodes, tNodes, aType, players, teams):
+    def GenerateAnalysedNodesGUI(s, mNodes, pNodes, tNodes, aType, players, teams, playersHNodes = False):
         s.DeleteIDEntries()
 
         s.tabParent = ttk.Notebook(s.w)
         s.matchTab = ttk.Frame(s.tabParent)
 
         s.playerTabs = [ttk.Frame(s.tabParent) for _ in range(len(pNodes))]
+        if playersHNodes:
+            s.playerHistoricalTabs = [ttk.Frame(s.tabParent) for _ in playersHNodes[0]]
+        else:
+            s.playerHistoricalTabs = []
 
         s.teamTabs = [ttk.Frame(s.tabParent) for _ in range(len(tNodes))]
 
-        analysisNodeColumnsIDs = ("name", "tag", "relevancy", "accountForDuplicates", "percentage",
-                               "rawValue", "value", "rawRelevancy", "calculatedRelevancy", "pos")
-        analysisNodeColumnsName = ("Name", "Tag", "Relevancy", "Account for Duplicates", "Percentage",
-                               "Raw Value", "Value", "Raw Relevancy", "Calculated Relevancy", "Position")
-        analysisNodeColumnsWidth = (120, 100, 70, 70, 100, 100, 100, 100, 120, 100)
         print("Creating Tree")
         s.matchTree, s.matchScrollBar = s.CreateTree(mNodes, s.matchTab, aType)
 
@@ -677,6 +799,18 @@ class ReplayGUI:
             name = players[i].pList[3]
             s.tabParent.add(playerTab, text = name)
         
+        s.playerHistoricalTrees = []
+        s.playerHistoricalScrollBars = []
+
+        for i, playerHistoricalTab in enumerate(s.playerHistoricalTabs):
+            playerHTree, scrollBar = s.CreateTree(playersHNodes[0], playerHistoricalTab, "avg",
+                                                  columnIDs = ("name", "relevancy", "value", "againstValue", "index", "analysisType",  "calculatedRelevancy"),
+                                                  columnNames = ("Name", "Relevancy", "values", "Against Values", "Index", "AnalysisType", "Calculated Relevancy"))
+            s.playerHistoricalTrees.append(playerHTree)
+            s.playerHistoricalScrollBars.append(scrollBar)
+
+            name = playersHNodes[1][i]
+            s.tabParent.add(playerHistoricalTab, text = name)
 
         s.teamTrees = []
         s.teamScrollBars = []
