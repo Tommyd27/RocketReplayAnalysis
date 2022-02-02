@@ -40,6 +40,19 @@ class AnalysisNode:
             output += f"\nPosition: {self.pos}"
         return output
 
+class HistoricalNode:
+    def __init__(s, name, relevancy, value, againstValue, index, analysisType) -> None:
+        s.n = name
+        s.r = relevancy
+        s.v = value
+        s.aV = againstValue
+        s.i = index
+        s.aT = analysisType
+        if s.aT 
+        s.cR = value / againstValue
+        s.cR -= 0.5
+        s.cR *= relevancy
+
 class Player:
     allNodes = ["playerID", "matchID", "gameID", "pBallchasingID", "pCalculatedId", "pName", "pPlatform", "pTier", 
                 "carName", "titleID", "teamColour", "bUsage", "bPerMinute", "bConsumptionPerMinute", "aAmount", 
@@ -244,6 +257,7 @@ class PlayerHistoric(Player):
         s.n = {}
         s.nApp = len(players)
         s.iS = intensiveStats
+        s.id = players[0].pList[0]
         for stat in PlayerHistoric.analysisNodes:
             match stat.aT:
                 case 0:
@@ -251,11 +265,10 @@ class PlayerHistoric(Player):
                     aSum = sum(aList)
 
                     aAvg = aSum / len(aList)
-                    aMin = min(aList)
-                    aMax = max(aList)
-                    s.n[stat.n] = [aAvg, aMin, aMax]
+
+                    s.n[stat.n] = [aAvg, aList]
                 case [1, 2]:
-                    allValues = [p[stat.n] for p in players]
+                    allValues = [p[stat.n] for p in players if stat.n in p.nodes]
                     s.n[stat.n] = Counter(allValues)
                     
         if intensiveStats:
@@ -270,7 +283,11 @@ class PlayerHistoric(Player):
                 otherPStats = [x.nodes[stat.n].v for x in allPlayers]
                 aAvg = sum(otherPStats) / len(otherPStats)
                 s.aN[stat.n] = aAvg
-                    
+    def __eq__(self, o: object) -> bool:
+        if isinstance(o, PlayerHistoric):
+            return self.id == o.id
+        else:
+            return self.id == o
 class Team:
     analysisNodes = [AnalysisNode("maxLead", "lead", 0),
                      AnalysisNode("maxDeficit", "lead", 0),
@@ -517,8 +534,10 @@ class ReplayAnalysis:
             pass
     def AnalyseNode(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
         #type : top%, average
-        debugNodesList = nodesList
-        nodesList = self.__dict__[nodesList]
+        if isinstance(nodesList, str):
+            nodeType = nodesList
+            nodesList = self.__dict__[nodesList]
+
         matchTags = []
         if onlyTags == True:
             matchTags = analyseNode.mL[-6:-2]
@@ -586,6 +605,29 @@ class ReplayAnalysis:
                         node.rR = 0
                         node.cR = 0
                         node.pos = "N/A"
+        
+        if nodeType == "Player":
+            if analyseNode.pList[0] in self.historicPlayers:
+                hPlayer = self.historicPlayers[self.historicPlayers.index(analyseNode.pList[0])]
+                analyseNode.againstNodes = []
+                for node in analyseNode.nodes.values():
+                    if node.aT == 0:
+                        nList = hPlayer.n[node.n][1]
+                        nList.append(node.v)
+                        sList = sorted(nList, reverse = True)
+
+                        nIndex = [sList.index(node.v) + 1, len(sList)]
+                        againstValues = hPlayer.n[node.n][0]
+                    else:
+                        nIndex = "n/a"
+                        againstValues = hPlayer.n[node.n]
+
+                    
+                    analyseNode.append(HistoricalNode(node.n, node.r[nodeType] if nodeType in node.r else 1, node.v, againstValues, nIndex, node.aT))
+
+        elif nodeType == "Team":
+            pass
+
         return analyseNode
     def AnalyseReplay(self, replayID):
         executeSTR = f"SELECT * FROM matchTable WHERE matchID = {replayID}"
