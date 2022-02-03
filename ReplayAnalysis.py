@@ -108,7 +108,7 @@ class Player:
                     AnalysisNode('nStolenBig', 'boost', 0, index = retrievalNodes.index("nStolenBig")),
                     AnalysisNode('nStolenSmall', 'boost', 0, index = retrievalNodes.index("nStolenSmall")),
                     AnalysisNode('qOverfill', 'boost', 0, index = retrievalNodes.index("qOverfill")),
-                    AnalysisNode('qOverfillStolen', 'boost', 0, index = retrievalNodes.index("qOverfillStolen")),
+                    AnalysisNode('qOverfillStolen', 'boost', 0, index = retrievalNodes.index("qOverfillStolen"), punishDuplicates = True),
                     AnalysisNode('qWasted', 'boost', 0, index = retrievalNodes.index("qWasted")),
                     AnalysisNode('tZeroBoost', 'boost', 0, index = retrievalNodes.index("tZeroBoost"), percentage = "ballchasingBoostTime"),
                     AnalysisNode('tFullBoost', 'boost', 0, index = retrievalNodes.index("tFullBoost"), percentage = "ballchasingBoostTime"),
@@ -226,8 +226,8 @@ class Player:
                             print(calcString)
             else:
                 node.rV = playerList[node.i]
-                if not node.rV:
-                    node.rV = -1
+                if not node.rV and node.rV != 0:
+                    node.rV = node.default
             if node.p:
                 if node.rV != -1:
                     if node.p in Player.retrievalNodes:
@@ -267,14 +267,20 @@ class PlayerHistoric(Player):
         s.n = {}
         s.nApp = len(players)
         s.iS = intensiveStats
-        s.id = players[0].pList[0]
+        s.id = players[0].pList[1]
         for stat in PlayerHistoric.analysisNodes:
             match stat.aT:
                 case 0:
-                    aList = [x.nodes[stat.n].v for x in players if stat.n in x.nodes]
-                    aSum = sum(aList)
-
-                    aAvg = aSum / len(aList)
+                    aList = [x.nodes[stat.n].v for x in players if stat.n in x.nodes and x.nodes[stat.n].v not in [None, "NaN", -1]]
+                    try:
+                        aSum = sum(aList)
+                    except TypeError as e:
+                        print(aList)
+                        raise e
+                    try:
+                        aAvg = aSum / len(aList)
+                    except ZeroDivisionError:
+                        aAvg = -1
 
                     s.n[stat.n] = [aAvg, aList]
                 case [1, 2]:
@@ -417,9 +423,6 @@ class Match:
                 print("Updating to default")
                 node.v = node.default   
             self.nodes[node.n] = node
-            if node.i == 7:
-                pass
-                #print(self.nodes["overtime"].v)
 
     def __repr__(self) -> str:
         output = ""
@@ -429,8 +432,8 @@ class Match:
 
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, tagsToLoad = None):
-        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
         if loadReplays:
@@ -510,36 +513,21 @@ class ReplayAnalysis:
             self.historicPlayers = []
             playersDict = {}
             for player in self.players:
-                id = player.pList[0]
+                id = player.pList[1]
                 if id in playersDict:
                     playersDict[id] += 1
                 else:
                     playersDict[id] = 1
             historicDict = {}
             for player in self.players:
-                id = player.pList[0]
+                id = player.pList[1]
                 if playersDict[id] >= PlayerHistoric.countForHistoric:
                     if id in historicDict:
                         historicDict[id].append(player)
                     else:
                         historicDict[id] = [player]
-            for hPlayer in historicDict:
-                playerObjects = []
-                for id in hPlayer:
-                    try:
-                        self.c.execute(f"SELECT {', '.join(Player.retrievalNodes)} FROM playerMatchTable WHERE playerID = {id}")
-                    except:
-                        print(', '.join(Player.retrievalNodes))
-                        print(f"SELECT {', '.join(Player.retrievalNodes)} FROM playerMatchTable WHERE playerID = {id}")
-                        input()
-                    details = self.c.fetchone()
-
-                    self.c.execute(f"SELECT {', '.join(Match.retrievalNodes)} FROM matchTable WHERE matchID = {details[-1]}")
-
-                    mDetails = self.c.fetchone()
-
-                    playerObjects.append(Player(details, mDetails))
-                self.historicPlayers.append(PlayerHistoric(playerObjects))
+            for hPlayer in historicDict.values():
+                self.historicPlayers.append(PlayerHistoric(hPlayer))
         if instantiateHistoricTeams:
             pass
     def AnalyseNode(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
@@ -616,9 +604,9 @@ class ReplayAnalysis:
                         node.cR = 0
                         node.pos = "N/A"
         analyseNode.againstNodes = False
-        if nodeType == "Player":
-            if analyseNode.pList[0] in self.historicPlayers:
-                hPlayer = self.historicPlayers[self.historicPlayers.index(analyseNode.pList[0])]
+        if nodeType == "players":
+            if analyseNode.pList[1] in self.historicPlayers:
+                hPlayer = self.historicPlayers[self.historicPlayers.index(analyseNode.pList[1])]
                 analyseNode.againstNodes = []
                 for node in analyseNode.nodes.values():
                     if node.aT == 0:
@@ -630,7 +618,12 @@ class ReplayAnalysis:
                         againstValues = hPlayer.n[node.n][0]
                     else:
                         nIndex = "n/a"
-                        againstValues = hPlayer.n[node.n]
+                        try:
+                            againstValues = hPlayer.n[node.n]
+                        except KeyError:
+                            print(node.n)
+                            print(hPlayer.n.keys())
+                            input()
 
                     
                     analyseNode.againstNodes.append(HistoricalNode(node.n, node.r[nodeType] if nodeType in node.r else 1, node.v, againstValues, nIndex, node.aT))
@@ -702,7 +695,7 @@ class ReplayGUI:
             playersNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in playersNodes]
 
             playersHNodes = [[x for x in y.againstNodes] for y in playersAnalysed if y.againstNodes]
-            playersHIDs = [y.pList[3] for y in playersAnalysed if y.againstNodes]0
+            playersHIDs = [y.pList[3] for y in playersAnalysed if y.againstNodes]
             playersHNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in playersHNodes]
 
             teamsNodes = [[x for x in y.nodes.values()] for y in teamsAnalysed]
@@ -751,13 +744,13 @@ class ReplayGUI:
 
         scrollBar = ttk.Scrollbar(window, orient = tk.VERTICAL, command = tree.yview)
 
-        tree.configure(yscroll = s.mVerticalScrollBar.set)
+        tree.configure(yscroll = scrollBar.set)
 
         scrollBar.grid(column = 1, row = 0)
 
         for i in range(len(columnIDs)):
-            s.matchTree.heading(columnIDs[i], text = columnNames[i])
-            s.matchTree.column(s.matchTree["columns"][i], width = columnWidths[i])
+            tree.heading(columnIDs[i], text = columnNames[i])
+            tree.column(tree["columns"][i], width = columnWidths[i])
         for node in values:
             if not historical:
                 values = [node.n, node.t, node.r[aType] if aType in node.r else 1, node.aFD, node.dV, node.rV, node.v, node.rR, node.cR, node.pos]

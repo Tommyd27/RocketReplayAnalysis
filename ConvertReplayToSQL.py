@@ -608,7 +608,7 @@ def main(replayFolder = r"C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod
     global calculatedDict
     global players
     print(f"Main")
-    updateOldReplays = False
+    updateOldReplays = True
     dbConn = CreateConnection(databaseFolder + databaseName)
     cur = dbConn.cursor()
     
