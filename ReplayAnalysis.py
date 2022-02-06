@@ -621,9 +621,7 @@ class ReplayAnalysis:
                         try:
                             againstValues = hPlayer.n[node.n]
                         except KeyError:
-                            print(node.n)
-                            print(hPlayer.n.keys())
-                            input()
+                            againstValues = Counter([])
 
                     
                     analyseNode.againstNodes.append(HistoricalNode(node.n, node.r[nodeType] if nodeType in node.r else 1, node.v, againstValues, nIndex, node.aT))
