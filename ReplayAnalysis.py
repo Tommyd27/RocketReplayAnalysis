@@ -48,9 +48,7 @@ analysisNodeDictionary = {"default" : {"analysisType" : 0, "accountForDuplicates
                           "qOverfillStolen" : {"punishDuplicates" : True},
                          }
 
-valueNodes = {"Match" : [],
-              "Player": [],
-              "Team"  : []}
+
 tagsDictionary = {}
 
 class ValueNode:
@@ -86,53 +84,8 @@ class ValueNode:
             output += f"\nPosition: {self.pos}"
         return output
 
-class AnalysisNode:
-    def __init__(s, valueNode, **kwargs) -> None:
-        #Account for Duplicates, Punish Duplicates, Relevancy, 
-        keywordArgs = ["analysisType", "accountForDuplicates", "punishDuplicates", "relevancy", "percentageAccountForValue"] #Analysis Node Arguments
-        s.valueNode = valueNode #Setting Value Node 
-        name = valueNode.n #Fetching name for use
-        for kArg in keywordArgs: #For argument in keyword Args
-            if kArg in kwargs: #If in given values
-                s.__dict__[kArg] = kwargs[kArg] 
-            elif name in analysisNodeDictionary and kArg in analysisNodeDictionary[name]: #Checks to see if it's in analysisNodeDict
-                s.__dict__[kArg] = analysisNodeDictionary[name][kArg]
-            else:
-                s.__dict__[kArg] = analysisNodeDictionary["default"][kArg] #Sets to default value
-class HistoricalNode:
-    def __init__(s, name, relevancy, value, againstValue, index, analysisType) -> None:
-        s.n = name
-        s.r = relevancy
-        s.v = value
-        s.aV = againstValue
-        s.i = index
-        s.aT = analysisType
-        if s.aT == 0:
-            s.cR = value / againstValue
-            s.cR -= 0.5
-            s.cR *= relevancy
-        elif s.aT == 1:
-            againstValue : Counter
-            try:
-                s.cR = againstValue[value] / sum(againstValue.values())
-            except ZeroDivisionError as e:
-                s.cR = 0.5
-            
-            s.cR -= 0.5
-            s.cR *= relevancy
-        elif s.aT == 2:
-            try:
-                s.cR = againstValue[value] / sum(againstValue.values())
-            except ZeroDivisionError as e:
-                s.cR = 0.5
-            s.cR -= 0.5
-            s.cR *= relevancy
-        else:
-            print("cunt")
-
-class Player:
-
-    analysisNodes =[ValueNode('carName', teamStat = False), 
+valueNodes = {"Match" : [],
+              "Player": [ValueNode('carName', teamStat = False), 
                     ValueNode('bUsage'),
                     ValueNode('bPerMinute'),
                     ValueNode('bConsumptionPerMinute'),
@@ -233,8 +186,59 @@ class Player:
                     ValueNode("fiftyWinRate", percentage = "totalFifties"),
                     ValueNode("fiftyNotLossRate", percentage = "totalFifties", calculation = ["@ + @", "fiftyWins", "fiftyDraws"]),
                     ValueNode('goalParticipation', percentage = "teamGoals", calculation = ["@ + @", "goals", "assists"]),
-                    ValueNode('scoredFirst', calculation = True),
-                        ]
+                    ValueNode('scoredFirst', calculation = True)],
+}
+for nodeType in valueNodes:#Match, Player
+    nodeDict = {}
+    for node in valueNodes[nodeType]:
+        nodeDict[node.n] = node
+    valueNodes[nodeType] = nodeDict
+
+class AnalysisNode:
+    def __init__(s, valueNode, **kwargs) -> None:
+        #Account for Duplicates, Punish Duplicates, Relevancy, 
+        keywordArgs = ["analysisType", "accountForDuplicates", "punishDuplicates", "relevancy", "percentageAccountForValue"] #Analysis Node Arguments
+        s.valueNode = valueNode #Setting Value Node 
+        name = valueNode.n #Fetching name for use
+        for kArg in keywordArgs: #For argument in keyword Args
+            if kArg in kwargs: #If in given values
+                s.__dict__[kArg] = kwargs[kArg] 
+            elif name in analysisNodeDictionary and kArg in analysisNodeDictionary[name]: #Checks to see if it's in analysisNodeDict
+                s.__dict__[kArg] = analysisNodeDictionary[name][kArg]
+            else:
+                s.__dict__[kArg] = analysisNodeDictionary["default"][kArg] #Sets to default value
+class HistoricalNode:
+    def __init__(s, name, relevancy, value, againstValue, index, analysisType) -> None:
+        s.n = name
+        s.r = relevancy
+        s.v = value
+        s.aV = againstValue
+        s.i = index
+        s.aT = analysisType
+        if s.aT == 0:
+            s.cR = value / againstValue
+            s.cR -= 0.5
+            s.cR *= relevancy
+        elif s.aT == 1:
+            againstValue : Counter
+            try:
+                s.cR = againstValue[value] / sum(againstValue.values())
+            except ZeroDivisionError as e:
+                s.cR = 0.5
+            
+            s.cR -= 0.5
+            s.cR *= relevancy
+        elif s.aT == 2:
+            try:
+                s.cR = againstValue[value] / sum(againstValue.values())
+            except ZeroDivisionError as e:
+                s.cR = 0.5
+            s.cR -= 0.5
+            s.cR *= relevancy
+        else:
+            print("cunt")
+
+class Player:
     def __init__(self, playerList, matchList):
         nodesCopy = [x.copy() for x in Player.analysisNodes]
         self.pList = playerList
