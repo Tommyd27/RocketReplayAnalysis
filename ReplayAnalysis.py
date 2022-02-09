@@ -3,6 +3,7 @@ import tkinter as tk
 
 from collections import Counter
 from tkinter import ttk
+
 ######################
 #AnalysisNode(DefaultAnalysisNode, Value)
 #
@@ -65,11 +66,8 @@ class ValueNode:
             self.i = retrievalNodes["Player"].index(name)
         else:
             self.i = -1
-
     def __eq__(self, __o: object) -> bool:
         return self.n == __o.n
-    def copy(self):
-        return ValueNode(self.n, self.t, self.aT, self.r, self.p, self.c, self.aFD, self.pD, self.tS, self.i, self.default, self.pAccountForV)
     def __repr__(self) -> str:
         output = f"Name: {self.n}\nRelevance: {self.r}\nIndex: {self.i}"
         if "rV" in self.__dict__:
@@ -83,6 +81,33 @@ class ValueNode:
         if "pos" in self.__dict__:
             output += f"\nPosition: {self.pos}"
         return output
+    def GiveValue(s, rawValue, percentageOf = None, calculationValues = None ):
+        node = ValueNode(s.n, s.p, s.c, s.tS, s.default)
+
+        node.rawValue = rawValue
+        node.percentageOf = percentageOf
+        node.calculationValues = calculationValues
+        fail = False
+        if node.rawValue in [None, "NaN", -1]:
+            node.calculatedValue = s.default
+            return node
+        cachedValue = node.rawValue
+        if node.c:
+            if node.c == True:
+                cachedValue = calculationValues[0]
+            else:
+                calculationValues : list
+                if calculationValues.count(-1) == len(calculationValues):
+                    node.calculatedValue = s.default
+                    return node
+                else:
+                    calculationValues = [x if x != -1 else 0 for x in calculationValues]
+                    calculationString = node.c
+                    for cValue in calculationValues:
+                        calculationString.replace("@", str(cValue), 1)
+                    cachedValue = eval(calculationString)
+        if node.p:
+
 
 valueNodes = {"Match" : [],
               "Player": [ValueNode('carName', teamStat = False), 
