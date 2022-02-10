@@ -95,7 +95,7 @@ class ValueNode:
         if "pos" in self.__dict__:
             output += f"\nPosition: {self.pos}"
         return output
-    def GiveValue(s, rawValue, percentageOf = None, calculationValues = None, individualPlayers = None, calculatePercent = True):
+    def GiveValue(s, rawValue, percentageOf = None, calculationValues = None, individualPlayers = None, teamCalculation = False):
         node = ValueNode(s.n, s.p, s.c, s.tS, s.default)
 
         node.rawValue = rawValue
@@ -106,7 +106,7 @@ class ValueNode:
             node.calculatedValue = s.default
             return node
         cachedValue = node.rawValue
-        if node.c:
+        if node.c and not teamCalculation:
             if node.c == True:
                 cachedValue = calculationValues[0]
             else:
@@ -120,7 +120,7 @@ class ValueNode:
                         calculationString = calculationString.replace("@", str(cValue), 1)
                     cachedValue = eval(calculationString)
             node.rawValue = cachedValue
-        if node.p and calculatePercent:
+        if node.p and not teamCalculation:
             if percentageOf != -1:
                 if percentageOf == 0:
                     cachedValue /= 1
@@ -398,7 +398,10 @@ class Team:
                 continue
             try:
                 playerStatValues = [x[i].calculatedValue for x in playersValues if x[i].calculatedValue != -1]
-                calculatedValue = sum(playerStatValues) / len(playerStatValues)
+                if len(playerStatValues) == 0:
+                    calculatedValue = -1
+                else:
+                    calculatedValue = sum(playerStatValues) / len(playerStatValues)
             except TypeError as e:
                 match node.n:
                     case "scoredFirst":
@@ -409,7 +412,7 @@ class Team:
                         print(node.n)
                         print([x[i].v for x in playersValues if x[i].v not in [-1, None]])
                         raise e
-            self.valueNodes[node.n] = node.GiveValue(calculatedValue, individualPlayers = playerStatValues, percent = False)
+            self.valueNodes[node.n] = node.GiveValue(calculatedValue, individualPlayers = playerStatValues, teamCalculation = True)
 
         teamPlayerIDs = [x.pList[0] for x in players]
 
