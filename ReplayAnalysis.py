@@ -67,7 +67,7 @@ analysisNodeDictionary = {"default" : {"analysisType" : 0, "accountForDuplicates
 tagsDictionary = {}
 
 class ValueNode:
-    def __init__(self, name, percentage = False, calculation = False, teamStat = True, default = -1) -> None:
+    def __init__(self, name, percentage = False, calculation = False, teamStat = True, default = -1, valueType = "Player") -> None:
         self.n = name
         self.p = percentage
         self.c = calculation
@@ -75,15 +75,15 @@ class ValueNode:
         self.tS = teamStat
 
         self.default = default
-
-        if name in retrievalNodes["Player"]:
-            self.i = retrievalNodes["Player"].index(name)
+        self.valueType = valueType
+        if name in retrievalNodes[valueType]:
+            self.i = retrievalNodes[valueType].index(name)
         else:
             self.i = -1
     def __eq__(self, __o: object) -> bool:
         return self.n == __o.n
     def __repr__(self) -> str:
-        output = f"Name: {self.n}\nRelevance: {self.r}\nIndex: {self.i}"
+        output = f"Name: {self.n}\nIndex: {self.i}\nDefault: {self.default}\nPercentage: {self.p}"
         if "rV" in self.__dict__:
             output += f"\nRaw Value: {self.rV}"
         if "v" in self.__dict__:
@@ -95,7 +95,7 @@ class ValueNode:
         if "pos" in self.__dict__:
             output += f"\nPosition: {self.pos}"
         return output
-    def GiveValue(s, rawValue, percentageOf = None, calculationValues = None, individualPlayers = None):
+    def GiveValue(s, rawValue, percentageOf = None, calculationValues = None, individualPlayers = None, calculatePercent = True):
         node = ValueNode(s.n, s.p, s.c, s.tS, s.default)
 
         node.rawValue = rawValue
@@ -115,26 +115,31 @@ class ValueNode:
                     return node
                 else:
                     calculationValues = [x if x != -1 else 0 for x in calculationValues]
-                    calculationString = node.c
+                    calculationString = node.c[0]
                     for cValue in calculationValues:
-                        calculationString.replace("@", str(cValue), 1)
+                        calculationString = calculationString.replace("@", str(cValue), 1)
                     cachedValue = eval(calculationString)
             node.rawValue = cachedValue
-        if node.p:
-            cachedValue /= percentageOf
-        
+        if node.p and calculatePercent:
+            if percentageOf != -1:
+                if percentageOf == 0:
+                    cachedValue /= 1
+                else:
+                    cachedValue /= percentageOf
+            else:
+                cachedValue /= 1
         node.calculatedValue = cachedValue
         return node
 
-valueNodes = {"Match" : [ValueNode('overtime'), 
-                    ValueNode('neutralPossessionTime', percentage = "durationCalculated"),
-                    ValueNode('bTimeGround', percentage = "durationCalculated"),
-                    ValueNode('bTimeLowAir', percentage = "durationCalculated"),
-                    ValueNode('bTimeHighAir', percentage = "durationCalculated"),
-                    ValueNode('bTimeNeutralThird', percentage = "durationCalculated"),
-                    ValueNode('bTimeNearWall', percentage = "durationCalculated"),
-                    ValueNode('bTimeInCorner', percentage = "durationCalculated"),
-                    ValueNode('bTimeOnWall', percentage = "durationCalculated"),
+valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"), 
+                    ValueNode('neutralPossessionTime', percentage = "durationCalculated", valueType = "Match"),
+                    ValueNode('bTimeGround', percentage = "durationCalculated", valueType = "Match"),
+                    ValueNode('bTimeLowAir', percentage = "durationCalculated", valueType = "Match"),
+                    ValueNode('bTimeHighAir', percentage = "durationCalculated", valueType = "Match"),
+                    ValueNode('bTimeNeutralThird', percentage = "durationCalculated", valueType = "Match"),
+                    ValueNode('bTimeNearWall', percentage = "durationCalculated", valueType = "Match"),
+                    ValueNode('bTimeInCorner', percentage = "durationCalculated", valueType = "Match"),
+                    ValueNode('bTimeOnWall', percentage = "durationCalculated", valueType = "Match"),
                     ValueNode('bAverageSpeed'),],
               "Player": [ValueNode('carName', teamStat = False), 
                     ValueNode('bUsage'),
@@ -161,7 +166,7 @@ valueNodes = {"Match" : [ValueNode('overtime'),
                     ValueNode('tBHalfUpperQuater', percentage = "ballchasingBoostTime"),
                     ValueNode('tBUpperQuaterFull', percentage = "ballchasingBoostTime"),
                     ValueNode('aSpeed'),
-                    ValueNode('aHitDistance', 'hits', 0),
+                    ValueNode('aHitDistance'),
                     ValueNode('aDistanceFromCentre'),
                     ValueNode('dTotal'),
                     ValueNode('tSonicS', percentage = "ballchasingStatTime"),
@@ -187,15 +192,15 @@ valueNodes = {"Match" : [ValueNode('overtime'),
                     ValueNode('tInFrontBall', percentage = "ballchasingStatTime"),
                     ValueNode('tMostBack', percentage = "ballchasingStatTime"),
                     ValueNode('tMostForward', percentage = "ballchasingStatTime"),
-                    ValueNode('goalsConcededLast', 'defense', 0, teamStat = False),
+                    ValueNode('goalsConcededLast', teamStat = False),
                     ValueNode('tClosestBall', percentage = "ballchasingStatTime"),
                     ValueNode('tFarthestBall', percentage = "ballchasingStatTime"),
-                    ValueNode('tCloseBall',npercentage = "ballchasingStatTime"),
+                    ValueNode('tCloseBall', percentage = "ballchasingStatTime"),
                     ValueNode('tNearWall', percentage = "ballchasingStatTime"),
                     ValueNode('tInCorner', percentage = "ballchasingStatTime"),
                     ValueNode('tOnWall', percentage = "ballchasingStatTime"),
-                    ValueNode('dHitForward', 'hits', 0),
-                    ValueNode('dHitBackward', 'hits', 0),
+                    ValueNode('dHitForward'),
+                    ValueNode('dHitBackward'),
                     ValueNode('pTime', percentage = "ballchasingStatTime"),
                     ValueNode('turnovers'),
                     ValueNode('turnoversMyHalf'),
@@ -204,15 +209,15 @@ valueNodes = {"Match" : [ValueNode('overtime'),
                     ValueNode('aPDuration'),
                     ValueNode('aPHits'),
                     ValueNode('qPossession'),
-                    ValueNode('demoInflicted', 'demo', 0),
-                    ValueNode('demoTaken', 'demo', 0),
-                    ValueNode('score', 'core', 0),
-                    ValueNode('goals', 'core', 0),
-                    ValueNode('assists', 'core', 0),
-                    ValueNode('saves', 'core', 0),
-                    ValueNode('shots', 'core', 0),
-                    ValueNode('mvp', 'core', 1),
-                    ValueNode('shootingP', 'offense', 0),
+                    ValueNode('demoInflicted'),
+                    ValueNode('demoTaken'),
+                    ValueNode('score'),
+                    ValueNode('goals'),
+                    ValueNode('assists'),
+                    ValueNode('saves'),
+                    ValueNode('shots'),
+                    ValueNode('mvp'),
+                    ValueNode('shootingP'),
                     ValueNode('totalHits'),
                     ValueNode('totalPasses'),
                     ValueNode('totalDribbles'),
@@ -301,7 +306,7 @@ class Player:
         
         self.valueNodes = {}
         
-        for node in valueNodes["Player"]:
+        for node in valueNodes["Player"].values():
             node : ValueNode
             if node.c:
                 if node.c == True:
@@ -309,39 +314,44 @@ class Player:
                         case "scoredFirst":
                             try:
                                 calcVariables = [playerList[0] == matchList[11][0]]
-                            except TypeError or IndexError:
+                            except (TypeError, IndexError):
                                 calcVariables = [-1]
                 else:
-                    calcVariables = [x.rawValue for x in self.nodes.values() if x.n in node.c[1:]]
+                    calcVariables = [x.calculatedValue for x in self.valueNodes.values() if x.n in node.c[1:]]
             else:
                 calcVariables = None
                 rawValue = playerList[node.i]
             if node.p:
-                if node.p in Player.retrievalNodes:
-                    divValue = playerList[Player.retrievalNodes.index(node.p)]
+                if node.p in retrievalNodes["Player"]:
+                    divValue = playerList[retrievalNodes["Player"].index(node.p)]
                 else:
                     match node.p:
                         case "teamGoals":
                             teamGoalsIndex = 10 if playerList[8] == "blue" else 9
                             divValue = matchList[teamGoalsIndex]
                         case "totalFifties":
-                            divValue = playerList[Player.retrievalNodes.index("fiftyWins")] + playerList[Player.retrievalNodes.index("fiftyLosses")] + playerList[Player.retrievalNodes.index("fiftyDraws")]
+                            try:
+                                divValue = playerList[retrievalNodes["Player"].index("fiftyWins")] + playerList[retrievalNodes["Player"].index("fiftyLosses")] + playerList[retrievalNodes["Player"].index("fiftyDraws")]
+                            except TypeError:
+                                divValue = -1
+                if divValue in [None, "NaN"]:
+                    divValue = -1
             else:
                 divValue = None       
-            self.nodes[node.n] = node.GiveValue(rawValue, divValue, calcVariables)
+            self.valueNodes[node.n] = node.GiveValue(rawValue, divValue, calcVariables)
 
 class PlayerHistoric(Player):
     countForHistoric = 3
     def __init__(s, players, intensiveStats = False):
         s.players = players
-        s.n = {}
-        s.nApp = len(players)
+        s.averageValues = {}
+        s.numAppearances = len(players)
         s.iS = intensiveStats
         s.id = players[0].pList[1]
-        for stat in PlayerHistoric.analysisNodes:
+        for stat in valueNodes["Player"]:
             match stat.aT:
                 case 0:
-                    aList = [x.nodes[stat.n].v for x in players if stat.n in x.nodes and x.nodes[stat.n].v not in [None, "NaN", -1]]
+                    aList = [x.valueNodes[stat.n].calculatedValue for x in players if stat.n in x.nodes and x.nodes[stat.n].v != -1]
                     try:
                         aSum = sum(aList)
                     except TypeError as e:
@@ -352,12 +362,13 @@ class PlayerHistoric(Player):
                     except ZeroDivisionError:
                         aAvg = -1
 
-                    s.n[stat.n] = [aAvg, aList]
+                    s.averageValues[stat.n] = [aAvg, aList]
                 case 1 | 2:
-                    allValues = [p.nodes[stat.n].v for p in players if stat.n in p.nodes]
-                    s.n[stat.n] = Counter(allValues)
+                    allValues = [p.nodes[stat.n].calculatedValue for p in players if stat.n in p.nodes]
+                    s.averageValues[stat.n] = Counter(allValues)
                     
         if intensiveStats:
+            raise NotImplementedError()
             allIDs = [x.mL[0] for x in players]
             allPlayers = [x for x in intensiveStats if x.mL[0] in allIDs]
 
@@ -380,13 +391,13 @@ class Team:
         self.players = players
         self.valueNodes = {}
         self.mL = matchList
-        playersValues = [list(x.nodes.values()) for x in players]
-        for i, node in enumerate(valueNodes["Player"]):
+        playersValues = [list(x.valueNodes.values()) for x in players]
+        for i, node in enumerate(valueNodes["Player"].values()):
             node : ValueNode
             if not node.tS:
                 continue
             try:
-                playerStatValues = [x[i].calculatedValue for x in playersValues if x[i].calculatedValuev != -1]
+                playerStatValues = [x[i].calculatedValue for x in playersValues if x[i].calculatedValue != -1]
                 calculatedValue = sum(playerStatValues) / len(playerStatValues)
             except TypeError as e:
                 match node.n:
@@ -398,7 +409,7 @@ class Team:
                         print(node.n)
                         print([x[i].v for x in playersValues if x[i].v not in [-1, None]])
                         raise e
-            self.valueNodes[node.n] = node.GiveValue(calculatedValue, individualPlayers = playerStatValues)
+            self.valueNodes[node.n] = node.GiveValue(calculatedValue, individualPlayers = playerStatValues, percent = False)
 
         teamPlayerIDs = [x.pList[0] for x in players]
 
@@ -431,13 +442,13 @@ class Match:
     def __init__(self, matchList) -> None:
         self.mL = matchList
         self.valueNodes = {}
-        for node in valueNodes["Match"]:
+        for node in valueNodes["Match"].values():
             rawValue = matchList[node.i]
             if node.p:
                 divValue = matchList[retrievalNodes["Match"].index(node.p)]
             else:
                 divValue = None
-            self.nodes[node.n] = node.GiveValue(rawValue, divValue)
+            self.valueNodes[node.n] = node.GiveValue(rawValue, divValue)
 
     def __repr__(self) -> str:
         output = ""
@@ -447,8 +458,8 @@ class Match:
 
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, tagsToLoad = None):
-        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
         if loadReplays:
@@ -489,8 +500,8 @@ class ReplayAnalysis:
         else:
             matchIDs = [x[0] for x in self.c.fetchmany(num)]
         matchIDsSTR = f"({', '.join([str(x) for x in matchIDs])})"
-        matchNodesToSelectSTR = ", ".join(Match.retrievalNodes)
-        playerNodesToSelectSTR = ", ".join(Player.retrievalNodes)
+        matchNodesToSelectSTR = ", ".join(retrievalNodes["Match"])
+        playerNodesToSelectSTR = ", ".join(retrievalNodes["Player"])
 
         self.c.execute(f"SELECT {matchNodesToSelectSTR} FROM matchTable WHERE matchID in {matchIDsSTR}")
         matchLists = self.c.fetchall()
