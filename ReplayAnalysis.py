@@ -504,6 +504,12 @@ class ReplayAnalysis:
             return Match(matchDetails), players, [Team([x for x in players if x.pList[8] == "blue"], matchDetails), Team([x for x in players if x.pList[8] == "orange"], matchDetails)]
         else:
             return Match(matchDetails), [Player(x, matchDetails) for x in players]    
+    def FetchGame(self, replayID):
+        match = [x for x in self.matches if x.mL[0] == replayID][0]
+        players = [x for x in self.players if x.mL[0] == replayID]
+        teams = [x for x in self.teams if x.mL[0] == replayID]
+
+        historicPlayers = []
     def LoadReplays(self, tagsToLoad = None, num = -1, loadTeams = True, instantiateHistoricPlayers = True, instantiateHistoricTeams = True):
         tagsSTR = ""
         if tagsToLoad:
@@ -572,7 +578,8 @@ class ReplayAnalysis:
                 self.historicPlayers.append(PlayerHistoric(hPlayer))
         if instantiateHistoricTeams:
             pass
-    def Analyse
+    def CompareReplaySelf(self, replay):
+
     
     
     
