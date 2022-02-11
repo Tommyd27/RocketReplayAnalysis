@@ -67,13 +67,24 @@ analysisNodeDictionary = {"default" : {"analysisType" : 0, "accountForDuplicates
 tagsDictionary = {}
 
 class ValueNode:
-    def __init__(self, name, percentage = False, calculation = False, teamStat = True, default = -1, valueType = "Player") -> None:
+    def __init__(self, name, percentage = False, calculation = False, teamStat = True, default = -1, valueType = "Player", valueRangeType = 0) -> None:
+        """Name: Name of Node
+           Percentage: Name of Node it is Percentage Of
+           Calculation: List, Element 0 is eval string in form "@ + @", where @ are replaced with variables, all other elements are names of variables in calculation
+           Team Stat: Whether that stat is relevant to a team/ should be included in the Team Object
+           Default: If the fetched value is None, NaN or -1 it is set to this value
+           ValueType: What object the node is for
+           ValueRangeType: Whether to treat it as a continous curve of values or as a True or False, etc.
+           
+           Index: Location in retrievalNodes"""
+        
+        
         self.n = name
-        self.p = percentage
+        self.p = percentage #name of stat that it is percentage of
         self.c = calculation
 
         self.tS = teamStat
-
+        self.valueRangeType = valueRangeType
         self.default = default
         self.valueType = valueType
         if name in retrievalNodes[valueType]:
@@ -96,12 +107,14 @@ class ValueNode:
             output += f"\nPosition: {self.pos}"
         return output
     def GiveValue(s, rawValue, percentageOf = None, calculationValues = None, individualPlayers = None, teamCalculation = False):
-        node = ValueNode(s.n, s.p, s.c, s.tS, s.default)
+        node = ValueNode(s.n, s.p, s.c, s.tS, s.default, s.valueType, s.valueRangeType)
 
         node.rawValue = rawValue
         node.percentageOf = percentageOf
         node.calculationValues = calculationValues
         node.individualPlayers = individualPlayers
+
+
         if node.rawValue in [None, "NaN", -1]:
             node.calculatedValue = s.default
             return node
@@ -141,7 +154,7 @@ valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"),
                     ValueNode('bTimeInCorner', percentage = "durationCalculated", valueType = "Match"),
                     ValueNode('bTimeOnWall', percentage = "durationCalculated", valueType = "Match"),
                     ValueNode('bAverageSpeed'),],
-              "Player": [ValueNode('carName', teamStat = False), 
+              "Player": [ValueNode('carName', teamStat = False, valueRangeType = 1), 
                     ValueNode('bUsage'),
                     ValueNode('bPerMinute'),
                     ValueNode('bConsumptionPerMinute'),
@@ -242,7 +255,7 @@ valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"),
                     ValueNode("fiftyWinRate", percentage = "totalFifties"),
                     ValueNode("fiftyNotLossRate", percentage = "totalFifties", calculation = ["@ + @", "fiftyWins", "fiftyDraws"]),
                     ValueNode('goalParticipation', percentage = "teamGoals", calculation = ["@ + @", "goals", "assists"]),
-                    ValueNode('scoredFirst', calculation = True)],
+                    ValueNode('scoredFirst', calculation = True, valueRangeType = 1)],
               "Team": [ValueNode("maxLead"),
                      ValueNode("maxDeficit"),
                      ValueNode("finalLead"),
@@ -348,10 +361,10 @@ class PlayerHistoric(Player):
         s.numAppearances = len(players)
         s.iS = intensiveStats
         s.id = players[0].pList[1]
-        for stat in valueNodes["Player"]:
-            match stat.aT:
+        for stat in valueNodes["Player"].values():
+            match stat.valueRangeType:
                 case 0:
-                    aList = [x.valueNodes[stat.n].calculatedValue for x in players if stat.n in x.nodes and x.nodes[stat.n].v != -1]
+                    aList = [x.valueNodes[stat.n].calculatedValue for x in players if stat.n in x.valueNodes and x.valueNodes[stat.n].calculatedValue != -1]
                     try:
                         aSum = sum(aList)
                     except TypeError as e:
@@ -364,7 +377,7 @@ class PlayerHistoric(Player):
 
                     s.averageValues[stat.n] = [aAvg, aList]
                 case 1 | 2:
-                    allValues = [p.nodes[stat.n].calculatedValue for p in players if stat.n in p.nodes]
+                    allValues = [p.valueNodes[stat.n].calculatedValue for p in players if stat.n in p.valueNodes]
                     s.averageValues[stat.n] = Counter(allValues)
                     
         if intensiveStats:
@@ -428,12 +441,12 @@ class Team:
                     currentScore -= 1
                 currentScores.append(currentScore)
 
-            maxLeadNode = valueNodes["Team"][0].GiveValue(max(currentScores))
-            minLeadNode = valueNodes["Team"][1].GiveValue(min(currentScores))
-            finalLeadNode = valueNodes["Team"][2].GiveValue(currentScores[-1])
+            maxLeadNode = valueNodes["Team"]["maxLead"].GiveValue(max(currentScores))
+            minLeadNode = valueNodes["Team"]["maxDeficit"].GiveValue(min(currentScores))
+            finalLeadNode = valueNodes["Team"]["finalLead"].GiveValue(currentScores[-1])
 
-            comebackNode = valueNodes["Team"][3].GiveValue(minLeadNode.rV if minLeadNode.rV < 0 and finalLeadNode.rV > 0 else 0)
-            chokeNode = valueNodes["Team"][4].GiveValue(maxLeadNode.rV if maxLeadNode.rV > 1 and finalLeadNode.rV < 0 else 0)
+            comebackNode = valueNodes["Team"]["comeback"].GiveValue(minLeadNode.calculatedValue if minLeadNode.calculatedValue < 0 and finalLeadNode.calculatedValue > 0 else 0)
+            chokeNode = valueNodes["Team"]["choke"].GiveValue(maxLeadNode.calculatedValue if maxLeadNode.calculatedValue > 1 and finalLeadNode.calculatedValue < 0 else 0)
             leadNodes = [maxLeadNode, minLeadNode, finalLeadNode, comebackNode, chokeNode]
             for node in leadNodes:
                 self.valueNodes[node.n] = node
@@ -559,7 +572,14 @@ class ReplayAnalysis:
                 self.historicPlayers.append(PlayerHistoric(hPlayer))
         if instantiateHistoricTeams:
             pass
-    def AnalyseNode(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
+    def Analyse
+    
+    
+    
+    def _AnalyseNode_(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
+        """Deprecated"""
+        
+        
         #type : top%, average
         if isinstance(nodesList, str):
             nodeType = nodesList
@@ -659,7 +679,6 @@ class ReplayAnalysis:
             pass
 
         return analyseNode
-
 
 class ReplayGUI:
     def __init__(s) -> None:
