@@ -3,6 +3,7 @@ import tkinter as tk
 
 from collections import Counter
 from tkinter import ttk
+from urllib.parse import ParseResultBytes
 
 ######################
 #AnalysisNode(DefaultAnalysisNode, Value)
@@ -398,7 +399,11 @@ class PlayerHistoric(Player):
             return self.id == o.id
         else:
             return self.id == o
-
+    def GetHistoricPlayer(playerObject : Player, allPlayers):
+        playerAppearances = [x for x in allPlayers if x.pList[0] == playerObject.pList[0]]
+        if len(playerAppearances) > PlayerHistoric.countForHistoric:
+            return PlayerHistoric(playerAppearances)
+        return False
 class Team:
     def __init__(self, players, matchList) -> None:
         self.players = players
@@ -578,7 +583,17 @@ class ReplayAnalysis:
                 self.historicPlayers.append(PlayerHistoric(hPlayer))
         if instantiateHistoricTeams:
             pass
-    def CompareReplaySelf(self, replay):
+    def CompareReplaySelf(s, gamePlayers, gameTeams):
+        playerStats = {}
+        for statName in valueNodes["Player"]:
+            allStats = [x.valueNodes[statName].calculatedValue for x in gamePlayers] #Get All Player Stats
+            allStats = [x for x in allStats if x != -1] #Remove Invalid Values
+            if len(allStats) == 0:
+                continue
+            statAverage = sum(allStats) / len(allStats)
+            for singlePlayer in gamePlayers:
+
+
 
     
     
