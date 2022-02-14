@@ -3,7 +3,13 @@ import tkinter as tk
 
 from collections import Counter
 from tkinter import ttk
-from urllib.parse import ParseResultBytes
+
+def sign(val):
+    if val == 0:
+        return 0
+    else:
+        return 1 if val > 0 else -1
+
 
 ######################
 #AnalysisNode(DefaultAnalysisNode, Value)
@@ -63,6 +69,9 @@ retrievalNodes = {"Match" : ["matchID", "gameID", "map", "matchType",
 analysisNodeDictionary = {"default" : {"analysisType" : 0, "accountForDuplicates" : False, "punishDuplicates" : False, "relevancy" : 1, "percentageAccountForValue" : False},
                           "qOverfillStolen" : {"punishDuplicates" : True},
                          }
+punishDuplicatesAvg = {"default" : 0.2}
+
+percentageAccountValues = {"default" : [0.7, 0.2]}
 
 
 tagsDictionary = {}
@@ -108,8 +117,7 @@ class ValueNode:
             output += f"\nPosition: {self.pos}"
         return output
     def GiveValue(s, rawValue, percentageOf = None, calculationValues = None, individualPlayers = None, teamCalculation = False):
-        node = ValueNode(s.n, s.p, s.c, s.tS, s.default, s.valueType, s.valueRangeType)
-
+        node = ValueNode(s.n, s.p, s.c, s.tS, s.default, s.valueType, s.valueRangeType) 
         node.rawValue = rawValue
         node.percentageOf = percentageOf
         node.calculationValues = calculationValues
@@ -270,7 +278,7 @@ for nodeType in valueNodes:#Match, Player
     valueNodes[nodeType] = nodeDict
 
 class AnalysisNode:
-    def __init__(s, valueNode, **kwargs) -> None:
+    def __init__(s, valueNode : ValueNode, againstValues = None, typeOfAnalysis = 0, **kwargs) -> None:
         #Account for Duplicates, Punish Duplicates, Relevancy, 
         keywordArgs = ["analysisType", "accountForDuplicates", "punishDuplicates", "relevancy", "percentageAccountForValue"] #Analysis Node Arguments
         s.valueNode = valueNode #Setting Value Node 
@@ -282,6 +290,57 @@ class AnalysisNode:
                 s.__dict__[kArg] = analysisNodeDictionary[name][kArg]
             else:
                 s.__dict__[kArg] = analysisNodeDictionary["default"][kArg] #Sets to default value
+        if s.punishDuplicates:
+            if name in punishDuplicatesAvg:
+                s.punishDuplicates = punishDuplicatesAvg[name]
+            else:
+                s.punishDuplicates = punishDuplicatesAvg["default"]
+        if s.percentageAccountForValue:
+            if name in percentageAccountValues:
+                s.percentageAccountForValue = percentageAccountValues[name]
+            else:
+                s.percentageAccountForValue = percentageAccountValues["default"]
+        if againstValues:
+            s.valueIndex = againstValues.index(valueNode.calculatedValue)
+            if typeOfAnalysis == 0:
+                match s.analysisType:
+                    case 0:
+                        average = sum(againstValues) / len(againstValues)
+                        s.rawWeight = valueNode.calculatedValue / average
+
+                        if s.percentageAccountForValue:
+                            s.rawWeight *= s.percentageAccountForValue[0]
+                            
+                            weightEffect = valueNode.calculatedValue * s.percentageAccountForValue[1]
+                            
+                            s.alteredWeight += weightEffect
+
+                        s.equalisedWeight = s.rawWeight - 1
+                        s.alteredWeight = s.equalisedWeight
+                        if s.punishDuplicates:
+                            repeats = againstValues.count(valueNode.calculatedValue) - 1
+                            weightEffect = repeats * s.punishDuplicates
+                            s.alteredWeight -= weightEffect * sign(s.alteredWeight)
+                            
+
+
+
+                        s.calculatedWeight = s.equalisedWeight * s.relevancy
+                    case 1 | 2:
+                        relativeAppearances = againstValues.count(valueNode.calculatedValue) / sum(againstValues.values())
+                        s.rawWeight = (1 / pow(relativeAppearances, 0.5))
+
+                        s.alteredWeight = s.rawWeight
+                        s.equalisedWeight = s.rawWeight - 1
+                        s.calculatedWeight = s.equalisedWeight * s.relevancy
+            else:
+                match s.analysisType:
+                    case 0:
+                        pass
+                    case 1:
+                        pass
+                    case 2:
+                        pass
 class HistoricalNode:
     def __init__(s, name, relevancy, value, againstValue, index, analysisType) -> None:
         s.n = name
@@ -312,7 +371,6 @@ class HistoricalNode:
             s.cR *= relevancy
         else:
             print("cunt")
-
 class Player:
     def __init__(self, playerList, matchList):
         self.pList = playerList
@@ -353,7 +411,6 @@ class Player:
             else:
                 divValue = None       
             self.valueNodes[node.n] = node.GiveValue(rawValue, divValue, calcVariables)
-
 class PlayerHistoric(Player):
     countForHistoric = 3
     def __init__(s, players, intensiveStats = False):
@@ -455,10 +512,8 @@ class Team:
             leadNodes = [maxLeadNode, minLeadNode, finalLeadNode, comebackNode, chokeNode]
             for node in leadNodes:
                 self.valueNodes[node.n] = node
-
 class TeamHistoric(Team):
     countForHistoric = 3 
-
 class Match:
     def __init__(self, matchList) -> None:
         self.mL = matchList
@@ -592,7 +647,7 @@ class ReplayAnalysis:
                 continue
             statAverage = sum(allStats) / len(allStats)
             for singlePlayer in gamePlayers:
-
+                pass
 
 
     
