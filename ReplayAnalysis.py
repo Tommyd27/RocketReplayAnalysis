@@ -300,11 +300,14 @@ class AnalysisNode:
                 s.percentageAccountForValue = percentageAccountValues[name]
             else:
                 s.percentageAccountForValue = percentageAccountValues["default"]
+        if valueNode.calculatedValue == 1:
+            s.rawWeight, s.alteredWeight, s.equalisedWeight, s.calculatedWeight = -1
+            return
         if againstValues:
             s.valueIndex = againstValues.index(valueNode.calculatedValue)
-            if typeOfAnalysis == 0:
-                match s.analysisType:
-                    case 0:
+            match s.analysisType:
+                case 0:
+                    if typeOfAnalysis == 0:
                         average = sum(againstValues) / len(againstValues)
                         s.rawWeight = valueNode.calculatedValue / average
 
@@ -326,21 +329,15 @@ class AnalysisNode:
 
 
                         s.calculatedWeight = s.equalisedWeight * s.relevancy
-                    case 1 | 2:
+                    else:
+                        "magic here"
+                case 1 | 2:
                         relativeAppearances = againstValues.count(valueNode.calculatedValue) / sum(againstValues.values())
                         s.rawWeight = (1 / pow(relativeAppearances, 0.5))
 
                         s.alteredWeight = s.rawWeight
                         s.equalisedWeight = s.rawWeight - 1
                         s.calculatedWeight = s.equalisedWeight * s.relevancy
-            else:
-                match s.analysisType:
-                    case 0:
-                        pass
-                    case 1:
-                        pass
-                    case 2:
-                        pass
 class HistoricalNode:
     def __init__(s, name, relevancy, value, againstValue, index, analysisType) -> None:
         s.n = name
@@ -641,13 +638,14 @@ class ReplayAnalysis:
     def CompareReplaySelf(s, gamePlayers, gameTeams):
         playerStats = {}
         for statName in valueNodes["Player"]:
+            playerStats[statName] = {}
             allStats = [x.valueNodes[statName].calculatedValue for x in gamePlayers] #Get All Player Stats
             allStats = [x for x in allStats if x != -1] #Remove Invalid Values
             if len(allStats) == 0:
-                continue
-            statAverage = sum(allStats) / len(allStats)
-            for singlePlayer in gamePlayers:
-                pass
+                continue 
+            for player in gamePlayers:
+                playerStats[statName][player.pList[0]] = AnalysisNode(player.valueNodes[statName], allStats)
+            playerStats[statName]["average"] = sum(allStats) / len(allStats)
 
 
     
