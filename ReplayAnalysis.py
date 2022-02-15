@@ -463,6 +463,7 @@ class Team:
         self.players = players
         self.valueNodes = {}
         self.mL = matchList
+        self.colour = players[0].pList[8]
         playersValues = [list(x.valueNodes.values()) for x in players]
         for i, node in enumerate(valueNodes["Player"].values()):
             node : ValueNode
@@ -650,7 +651,13 @@ class ReplayAnalysis:
         teamStats = {}
         for statName in gameTeams[0].valueNodes:
             teamStats[statName] = {}
-            allStats 
+            allStats = [x.valuesNodes[statName].calculatedValue for x in gameTeams]
+            allStats = [x for x in allStats if x != -1]
+            if len(allStats) == 0:
+                continue
+            for team in gameTeams:
+                teamStats[statName][team.colour] = AnalysisNode(team.valuesNodes[statName], allStats)
+            teamStats[statName]["average"] = sum(allStats) / len(allStats)
 
 
     
