@@ -647,6 +647,11 @@ class ReplayAnalysis:
                 playerStats[statName][player.pList[0]] = AnalysisNode(player.valueNodes[statName], allStats)
             playerStats[statName]["average"] = sum(allStats) / len(allStats)
 
+        teamStats = {}
+        for statName in gameTeams[0].valueNodes:
+            teamStats[statName] = {}
+            allStats 
+
 
     
     
