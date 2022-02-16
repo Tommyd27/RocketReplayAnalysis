@@ -68,6 +68,8 @@ retrievalNodes = {"Match" : ["matchID", "gameID", "map", "matchType",
                 "ballchasingStartTime", "ballchasingEndTime", "ballchasingBoostTime", "ballchasingStatTime", "calculatedFirstFrame", "calculatedTimeInGame", "matchID"]}
 analysisNodeDictionary = {"default" : {"analysisType" : 0, "accountForDuplicates" : False, "punishDuplicates" : False, "relevancy" : 1, "percentageAccountForValue" : False},
                           "qOverfillStolen" : {"punishDuplicates" : True},
+                          "carName" : {"analysisType" : 1},
+                          "scoredFirst" : {"analysisType" : 2}
                          }
 punishDuplicatesAvg = {"default" : 0.2}
 
@@ -103,18 +105,10 @@ class ValueNode:
             self.i = -1
     def __eq__(self, __o: object) -> bool:
         return self.n == __o.n
-    def __repr__(self) -> str:
-        output = f"Name: {self.n}\nIndex: {self.i}\nDefault: {self.default}\nPercentage: {self.p}"
-        if "rV" in self.__dict__:
-            output += f"\nRaw Value: {self.rV}"
-        if "v" in self.__dict__:
-            output += f"\nValue: {self.v}"
-        if "rR" in self.__dict__:
-            output += f"\nRaw Relevancy: {self.rR}"
-        if "cR" in self.__dict__:
-            output += f"\nCalculated Relevancy: {self.cR}"
-        if "pos" in self.__dict__:
-            output += f"\nPosition: {self.pos}"
+    def __repr__(s) -> str:
+        output = f"Name: {s.n}, Percentage: {s.p}"
+        if "rawValue" in s.__dict__:
+            output += f", Raw Value: {s.rawValue}, Percentage Of: {s.percentageOf}, Calculated Value: {s.calculatedValue}"
         return output
     def GiveValue(s, rawValue, percentageOf = None, calculationValues = None, individualPlayers = None, teamCalculation = False):
         node = ValueNode(s.n, s.p, s.c, s.tS, s.default, s.valueType, s.valueRangeType) 
@@ -300,15 +294,19 @@ class AnalysisNode:
                 s.percentageAccountForValue = percentageAccountValues[name]
             else:
                 s.percentageAccountForValue = percentageAccountValues["default"]
-        if valueNode.calculatedValue == 1:
-            s.rawWeight, s.alteredWeight, s.equalisedWeight, s.calculatedWeight = -1
+        if valueNode.calculatedValue == -1:
+            s.rawWeight, s.alteredWeight, s.equalisedWeight, s.calculatedWeight = -1, -1, -1, -1
             return
         if againstValues:
             s.valueIndex = againstValues.index(valueNode.calculatedValue)
             match s.analysisType:
                 case 0:
                     if typeOfAnalysis == 0:
-                        average = sum(againstValues) / len(againstValues)
+                        try:
+                            average = sum(againstValues) / len(againstValues)
+                        except TypeError as e:
+                            print(againstValues)
+                            raise e
                         s.rawWeight = valueNode.calculatedValue / average
 
                         if s.percentageAccountForValue:
@@ -332,12 +330,15 @@ class AnalysisNode:
                     else:
                         "magic here"
                 case 1 | 2:
-                        relativeAppearances = againstValues.count(valueNode.calculatedValue) / sum(againstValues.values())
-                        s.rawWeight = (1 / pow(relativeAppearances, 0.5))
+                    relativeAppearances = againstValues.count(valueNode.calculatedValue) / len(againstValues)
+                    s.rawWeight = (1 / pow(relativeAppearances, 0.5))
 
-                        s.alteredWeight = s.rawWeight
-                        s.equalisedWeight = s.rawWeight - 1
-                        s.calculatedWeight = s.equalisedWeight * s.relevancy
+                    s.alteredWeight = s.rawWeight
+                    s.equalisedWeight = s.rawWeight - 1
+                    s.calculatedWeight = s.equalisedWeight * s.relevancy
+    def __repr__(s) -> str:
+        output = f"{s.valueNode}, Raw Weight: {s.rawWeight}, Calculated Weight: {s.calculatedWeight}"
+        return output
 class HistoricalNode:
     def __init__(s, name, relevancy, value, againstValue, index, analysisType) -> None:
         s.n = name
@@ -536,6 +537,9 @@ class ReplayAnalysis:
         self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
+
+        self.altdbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
+        self.altConn = False
         if loadReplays:
             self.LoadReplays(tagsToLoad)
     def CreateConnection(self, dbFile):
@@ -543,17 +547,21 @@ class ReplayAnalysis:
         self.conn = sqlite3.connect(dbFile)
         self.c = self.conn.cursor()
         print(f"SQLite3 Version: {sqlite3.version}")
+    def CreateAltConnection(self, dbFile):
+        print(f"Creating Alternate Connection to {dbFile}")
+        self.altConn = sqlite3.connect(dbFile)
+        self.altC = self.altConn.cursor()
     def GetReplay(self, replayID, getTeams = True):
         if replayID < 0:
             executeSTR = f"SELECT matchID FROM matchTable ORDER BY matchID DESC;"
             self.c.execute(executeSTR)
             replayID *= -1
             replayID = self.c.fetchmany(replayID)[replayID - 1][0]
-        executeSTR = f"SELECT {', '.join(Match.retrievalNodes)} from matchTable WHERE matchID = {replayID}"
+        executeSTR = f"SELECT {', '.join(retrievalNodes['Match'])} from matchTable WHERE matchID = {replayID}"
         self.c.execute(executeSTR)
         matchDetails = self.c.fetchone()
 
-        executeSTR = f"SELECT {', '.join(Player.retrievalNodes)} from playerMatchTable WHERE matchID = {replayID}"
+        executeSTR = f"SELECT {', '.join(retrievalNodes['Player'])} from playerMatchTable WHERE matchID = {replayID}"
         self.c.execute(executeSTR)
 
         players = [x for x in self.c.fetchall()]
@@ -646,19 +654,27 @@ class ReplayAnalysis:
                 continue 
             for player in gamePlayers:
                 playerStats[statName][player.pList[0]] = AnalysisNode(player.valueNodes[statName], allStats)
-            playerStats[statName]["average"] = sum(allStats) / len(allStats)
+            try:
+                playerStats[statName]["average"] = sum(allStats) / len(allStats)
+            except TypeError:
+                playerStats[statName]["average"] = max(allStats, key = allStats.count)
 
         teamStats = {}
         for statName in gameTeams[0].valueNodes:
             teamStats[statName] = {}
-            allStats = [x.valuesNodes[statName].calculatedValue for x in gameTeams]
+            allStats = [x.valueNodes[statName].calculatedValue for x in gameTeams]
             allStats = [x for x in allStats if x != -1]
             if len(allStats) == 0:
                 continue
             for team in gameTeams:
-                teamStats[statName][team.colour] = AnalysisNode(team.valuesNodes[statName], allStats)
+                teamStats[statName][team.colour] = AnalysisNode(team.valueNodes[statName], allStats)
             teamStats[statName]["average"] = sum(allStats) / len(allStats)
-
+        
+        return playerStats, teamStats
+    def OutputAnalysis(s, analysis):
+        if not s.altConn:
+            s.CreateAltConnection(s.altdbFile)
+        
 
     
     
@@ -804,7 +820,8 @@ class ReplayGUI:
         s.idButton.grid(row = 0, column = 1)
 
 
-    def EnterIDs(s):
+    def _EnterIDs_(s):
+        #Deprecated
         gameIDs = s.idEntry.get()
         gameIDs = [int(x) for x in gameIDs.split(",")]
         analysisType = "top"
@@ -863,7 +880,27 @@ class ReplayGUI:
             teamsNodes = [sorted(x, reverse = True, key = lambda x : abs(x.cR)) for x in teamsNodes]
 
         s.GenerateAnalysedNodesGUI(matchNodes, playersNodes, teamsNodes, analysisType, players, teams, [playersHNodes, playersHIDs])
-    
+    def EnterIDs(s):
+        gameIDs = s.idEntry.get()
+        gameIDs = [int(x) for x in gameIDs.split(",")]
+        analysisType = "top"
+
+        match, players, teams = s.analysisEngine.GetReplay(gameIDs[0])
+
+        playersAnalysed, teamsAnalysed = s.analysisEngine.CompareReplaySelf(players, teams)
+
+
+        for element in playersAnalysed:
+            print(f"{element} : {playersAnalysed[element]}")
+
+        for element in teamsAnalysed:
+            continue
+            print(f"{element} : {teamsAnalysed[element]}")
+
+
+
+
+
     def CreateTree(s, values, window, aType, columnIDs = ("name", "tag", "relevancy", "accountForDuplicates", "percentage",
                                "rawValue", "value", "rawRelevancy", "calculatedRelevancy", "pos"), 
                               columnNames = ("Name", "Tag", "Relevancy", "Account for Duplicates", "Percentage",
@@ -955,6 +992,12 @@ class ReplayGUI:
     def DeleteIDEntries(s):
         s.idEntry.destroy()
         s.idButton.destroy()
+
+
+
+
+
+
 
 if __name__ == "__main__":
     gui = ReplayGUI()
