@@ -272,11 +272,18 @@ for nodeType in valueNodes:#Match, Player
     valueNodes[nodeType] = nodeDict
 
 class AnalysisNode:
+    valuesForOutput = ["rawWeight", "alteredWeight", "equalisedWeight", "calculatedWeight"]
+    valueValuesForOutput = ["rawValue", "percentageOf", "calculationValues", "calculatedValue"]
     def __init__(s, valueNode : ValueNode, againstValues = None, typeOfAnalysis = 0, **kwargs) -> None:
         #Account for Duplicates, Punish Duplicates, Relevancy, 
         keywordArgs = ["analysisType", "accountForDuplicates", "punishDuplicates", "relevancy", "percentageAccountForValue"] #Analysis Node Arguments
         s.valueNode = valueNode #Setting Value Node 
         name = valueNode.n #Fetching name for use
+
+        
+
+
+
         for kArg in keywordArgs: #For argument in keyword Args
             if kArg in kwargs: #If in given values
                 s.__dict__[kArg] = kwargs[kArg] 
@@ -671,9 +678,27 @@ class ReplayAnalysis:
             teamStats[statName]["average"] = sum(allStats) / len(allStats)
         
         return playerStats, teamStats
-    def OutputAnalysis(s, analysis):
+    def OutputAnalysis(s, *args):
         if not s.altConn:
             s.CreateAltConnection(s.altdbFile)
+        for output in args:
+            name = output[1]
+            valuesForOutput = ["rawWeight", "alteredWeight", "equalisedWeight", "calculatedWeight"]
+            valueValuesForOutput = ["rawValue", "percentageOf", "calculationValues", "calculatedValue"]
+            combinedValues = output.valueValuesForOutput + output.valuesForOutput
+            valuesString = "\n".join([f"{x} float," for x in combinedValues])
+            s.altConn.execute(f"""CREATE TABLE IF NOT EXISTS {name} (
+                                        id integer PRIMARY KEY,
+                                        name text,
+                                        """ + valuesString)
+            for i, analysisNode in enumerate(output[1]):
+                valuesOutputValues = [analysisNode.valueNode.__dict__[x] for x in valueValuesForOutput]
+                analysisOutputValues = [analysisNode.__dict__[x] for x in valuesForOutput]
+
+                outputValuesCombined = valuesOutputValues + analysisOutputValues
+                s.altConn.execute(f"""INSERT INTO {name} ({output.valueNode.name}, {i}, {', '.join([x for x in outputValuesCombined])})""")
+        s.altConn.commit()
+        
         
 
     
