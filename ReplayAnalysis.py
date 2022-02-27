@@ -1,8 +1,10 @@
 import sqlite3
 import tkinter as tk
-
+import kivy
+from string import ascii_letters
 from collections import Counter
 from tkinter import ttk
+from os import remove
 
 def sign(val):
     if val == 0:
@@ -11,17 +13,6 @@ def sign(val):
         return 1 if val > 0 else -1
 
 
-######################
-#AnalysisNode(DefaultAnalysisNode, Value)
-#
-#
-#
-#
-#
-#
-#
-#
-###########
 allNodes = {"Match" : ["matchID", "gameID", "replayName", "ballchasingLink", "map", "matchType", 
                 "teamSize", "playlistID", "durationCalculated", "durationBallchasing", 
                 "overtime", "season", "seasonType", "date", "time", "mmr", "nFrames", "orangeScore", "blueScore", 
@@ -69,7 +60,8 @@ retrievalNodes = {"Match" : ["matchID", "gameID", "map", "matchType",
 analysisNodeDictionary = {"default" : {"analysisType" : 0, "accountForDuplicates" : False, "punishDuplicates" : False, "relevancy" : 1, "percentageAccountForValue" : False},
                           "qOverfillStolen" : {"punishDuplicates" : True},
                           "carName" : {"analysisType" : 1},
-                          "scoredFirst" : {"analysisType" : 2}
+                          "scoredFirst" : {"analysisType" : 2},
+                          
                          }
 punishDuplicatesAvg = {"default" : 0.2}
 
@@ -79,7 +71,7 @@ percentageAccountValues = {"default" : [0.7, 0.2]}
 tagsDictionary = {}
 
 class ValueNode:
-    def __init__(self, name, percentage = False, calculation = False, teamStat = True, default = -1, valueType = "Player", valueRangeType = 0) -> None:
+    def __init__(self, name, percentage = False, calculation = False, teamStat = True, default = -1, valueType = "Player", valueRangeType = 0, tag = None) -> None:
         """Name: Name of Node
            Percentage: Name of Node it is Percentage Of
            Calculation: List, Element 0 is eval string in form "@ + @", where @ are replaced with variables, all other elements are names of variables in calculation
@@ -103,6 +95,8 @@ class ValueNode:
             self.i = retrievalNodes[valueType].index(name)
         else:
             self.i = -1
+        
+        self.tag = tag
     def __eq__(self, __o: object) -> bool:
         return self.n == __o.n
     def __repr__(s) -> str:
@@ -111,7 +105,7 @@ class ValueNode:
             output += f", Raw Value: {s.rawValue}, Percentage Of: {s.percentageOf}, Calculated Value: {s.calculatedValue}"
         return output
     def GiveValue(s, rawValue, percentageOf = None, calculationValues = None, individualPlayers = None, teamCalculation = False):
-        node = ValueNode(s.n, s.p, s.c, s.tS, s.default, s.valueType, s.valueRangeType) 
+        node = ValueNode(s.n, s.p, s.c, s.tS, s.default, s.valueType, s.valueRangeType, s.tag) 
         node.rawValue = rawValue
         node.percentageOf = percentageOf
         node.calculationValues = calculationValues
@@ -146,7 +140,7 @@ class ValueNode:
                 cachedValue /= 1
         node.calculatedValue = cachedValue
         return node
-
+ 
 valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"), 
                     ValueNode('neutralPossessionTime', percentage = "durationCalculated", valueType = "Match"),
                     ValueNode('bTimeGround', percentage = "durationCalculated", valueType = "Match"),
@@ -278,6 +272,7 @@ class AnalysisNode:
         #Account for Duplicates, Punish Duplicates, Relevancy, 
         keywordArgs = ["analysisType", "accountForDuplicates", "punishDuplicates", "relevancy", "percentageAccountForValue"] #Analysis Node Arguments
         s.valueNode = valueNode #Setting Value Node 
+        s.againstValue = -1
         name = valueNode.n #Fetching name for use
 
         
@@ -304,6 +299,7 @@ class AnalysisNode:
         if valueNode.calculatedValue == -1:
             s.rawWeight, s.alteredWeight, s.equalisedWeight, s.calculatedWeight = -1, -1, -1, -1
             return
+        
         if againstValues:
             s.valueIndex = againstValues.index(valueNode.calculatedValue)
             match s.analysisType:
@@ -314,6 +310,7 @@ class AnalysisNode:
                         except TypeError as e:
                             print(againstValues)
                             raise e
+                        s.againstValue = average
                         s.rawWeight = valueNode.calculatedValue / average
 
                         if s.percentageAccountForValue:
@@ -380,7 +377,8 @@ class Player:
     def __init__(self, playerList, matchList):
         self.pList = playerList
         self.mL = matchList
-        
+
+        self.name = playerList[3]
         self.valueNodes = {}
         
         for node in valueNodes["Player"].values():
@@ -418,7 +416,7 @@ class Player:
             self.valueNodes[node.n] = node.GiveValue(rawValue, divValue, calcVariables)
 class PlayerHistoric(Player):
     countForHistoric = 3
-    def __init__(s, players, intensiveStats = False):
+    def __init__(s, players, intensiveStats = True):
         s.players = players
         s.averageValues = {}
         s.numAppearances = len(players)
@@ -442,9 +440,42 @@ class PlayerHistoric(Player):
                 case 1 | 2:
                     allValues = [p.valueNodes[stat.n].calculatedValue for p in players if stat.n in p.valueNodes]
                     s.averageValues[stat.n] = Counter(allValues)
-                    
+        ["matchID", "gameID", "map", "matchType", 
+                "teamSize", "durationCalculated", "durationBallchasing", 
+                "overtime", "nFrames", "orangeScore", "blueScore", 
+                "goalSequence", "neutralPossessionTime", "bTimeGround", "bTimeLowAir", "bTimeHighAir", "bTimeBlueHalf", 
+                "bTimeOrangeHalf", "bTimeBlueThird", "bTimeNeutralThird", "bTimeOrangeThird", "bTimeNearWall", "bTimeInCorner", 
+                "bTimeOnWall", "bAverageSpeed", "bType", "gameMutatorIndex", "tBlueClumped", "tOrangeClumped", "tBlueIsolated", 
+                "tOrangeIsolated", "tBluePossession", "tOrangePossession", "replayTagOne", "replayTagTwo", "replayTagThree", 
+                "replayTagFour", "replayTagFive", "startPlayerIndex"]
+        ["playerID", "pBallchasingID", "pCalculatedId", "pName", "pPlatform", "pTier", 
+                "carName", "titleID", "teamColour", "bUsage", "bPerMinute", "bConsumptionPerMinute", "aAmount"]            
         if intensiveStats:
-            raise NotImplementedError()
+            s.goalSequencesDictionary = {}
+            for playerMatch in players:
+                colour = playerMatch[8]
+                orangeWin = playerMatch.mL[9] > playerMatch.mL[10]
+                win = int(orangeWin if colour == "orange" else not orangeWin)
+                goalSequence = playerMatch.mL[11]
+                teamSize = playerMatch.mL[4]
+                if colour == "orange":
+                    goalSequence = [0 if x > teamSize else 1 for x in goalSequence]
+                else:
+                    goalSequence = [0 if x <= teamSize else 1 for x in goalSequence]
+                #0 a goal for you, 1 a goal for them
+                currentScore = [0, 0]
+                for goal in goalSequence:
+                    currentScore[goal] += 1
+                    try:
+                        s.goalSequencesDictionary[currentScore][win] += 1
+                    except KeyError:
+                        s.goalSequencesDictionary[currentScore] = [0, 0]
+                        s.goalSequencesDictionary[currentScore][win] += 1
+                
+                
+
+
+            return
             allIDs = [x.mL[0] for x in players]
             allPlayers = [x for x in intensiveStats if x.mL[0] in allIDs]
 
@@ -539,23 +570,29 @@ class Match:
         return output
 
 class ReplayAnalysis:
-    def __init__(self, loadReplays = True, tagsToLoad = None):
-        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+    def __init__(self, loadReplays = True, args = None):
+        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
 
-        self.altdbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
+        #self.altdbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
+        self.altdbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
+        #self.altdbFile = ":memory:"
         self.altConn = False
         if loadReplays:
-            self.LoadReplays(tagsToLoad)
+            self.LoadReplays(args)
     def CreateConnection(self, dbFile):
         print(f"Connected to {dbFile}")
         self.conn = sqlite3.connect(dbFile)
         self.c = self.conn.cursor()
         print(f"SQLite3 Version: {sqlite3.version}")
-    def CreateAltConnection(self, dbFile):
+    def CreateAltConnection(self, dbFile, delete = True):
         print(f"Creating Alternate Connection to {dbFile}")
+        if delete:
+            remove(dbFile)
+            f = open(dbFile, "w")
+            f.close()
         self.altConn = sqlite3.connect(dbFile)
         self.altC = self.altConn.cursor()
     def GetReplay(self, replayID, getTeams = True):
@@ -583,7 +620,7 @@ class ReplayAnalysis:
         teams = [x for x in self.teams if x.mL[0] == replayID]
 
         historicPlayers = []
-    def LoadReplays(self, tagsToLoad = None, num = -1, loadTeams = True, instantiateHistoricPlayers = True, instantiateHistoricTeams = True):
+    def LoadReplays(self, tagsToLoad, num = -1, loadTeams = True, instantiateHistoricPlayers = True, instantiateHistoricTeams = True):
         tagsSTR = ""
         if tagsToLoad:
             tagsSTR = f""" WHERE {'and'.join([f'{x[0]} = "{x[1]}"' if isinstance(x[1], str) else f'{x[0]} = {x[1]}' for x in tagsToLoad])}"""
@@ -654,56 +691,75 @@ class ReplayAnalysis:
     def CompareReplaySelf(s, gamePlayers, gameTeams):
         playerStats = {}
         for statName in valueNodes["Player"]:
-            playerStats[statName] = {}
             allStats = [x.valueNodes[statName].calculatedValue for x in gamePlayers] #Get All Player Stats
             allStats = [x for x in allStats if x != -1] #Remove Invalid Values
             if len(allStats) == 0:
                 continue 
             for player in gamePlayers:
-                playerStats[statName][player.pList[0]] = AnalysisNode(player.valueNodes[statName], allStats)
+                if player.pList[0] not in playerStats:
+                    playerStats[player.pList[0]] = {}
+                playerStats[player.pList[0]][statName] = AnalysisNode(player.valueNodes[statName], allStats)
+            if "average" not in playerStats:
+                playerStats["average"] = {}
             try:
-                playerStats[statName]["average"] = sum(allStats) / len(allStats)
+                playerStats["average"][statName] = sum(allStats) / len(allStats)
             except TypeError:
-                playerStats[statName]["average"] = max(allStats, key = allStats.count)
+                playerStats["average"][statName] = max(allStats, key = allStats.count)
 
-        teamStats = {}
+        teamStats = {"orange" : {}, "blue" : {}, "average" : {}}
         for statName in gameTeams[0].valueNodes:
-            teamStats[statName] = {}
             allStats = [x.valueNodes[statName].calculatedValue for x in gameTeams]
             allStats = [x for x in allStats if x != -1]
             if len(allStats) == 0:
                 continue
             for team in gameTeams:
-                teamStats[statName][team.colour] = AnalysisNode(team.valueNodes[statName], allStats)
-            teamStats[statName]["average"] = sum(allStats) / len(allStats)
-        
-        return playerStats, teamStats
-    def OutputAnalysis(s, *args):
+                teamStats[team.colour][statName] = AnalysisNode(team.valueNodes[statName], allStats)
+            teamStats["average"][statName] = sum(allStats) / len(allStats)
+        playerNames = [x.name for x in gamePlayers] + ["average"]
+        teamNames = [team.colour for team in gameTeams] + ["average"]
+        s.OutputAnalysis([(f"{playerNames[i]}_player", x) for i, x in enumerate(playerStats.values())] + [(f"{teamNames[i]}_team", x) for i, x in enumerate(teamStats.values())])
+    def OutputAnalysis(s, args):
         if not s.altConn:
             s.CreateAltConnection(s.altdbFile)
         for output in args:
-            name = output[1]
-            valuesForOutput = ["rawWeight", "alteredWeight", "equalisedWeight", "calculatedWeight"]
-            valueValuesForOutput = ["rawValue", "percentageOf", "calculationValues", "calculatedValue"]
-            combinedValues = output.valueValuesForOutput + output.valuesForOutput
-            valuesString = "\n".join([f"{x} float," for x in combinedValues])
-            s.altConn.execute(f"""CREATE TABLE IF NOT EXISTS {name} (
-                                        id integer PRIMARY KEY,
-                                        name text,
-                                        """ + valuesString)
-            for i, analysisNode in enumerate(output[1]):
-                valuesOutputValues = [analysisNode.valueNode.__dict__[x] for x in valueValuesForOutput]
-                analysisOutputValues = [analysisNode.__dict__[x] for x in valuesForOutput]
+            name = output[0]
+            if "average" not in name:
+                altName = "".join([x for x in name if x in ascii_letters])
+                valuesForOutput = ["rawWeight", "alteredWeight", "equalisedWeight", "calculatedWeight", "againstValue"]
+                valueValuesForOutput = ["rawValue", "percentageOf", "calculationValues", "calculatedValue"]
+                combinedValues = valueValuesForOutput + valuesForOutput
+                valuesString = "\n\t".join([f"{x} float," for x in combinedValues])       
+                s.altConn.execute(f"""CREATE TABLE {altName} (
+\tid integer PRIMARY KEY,
+\tname text,
+\t""" + valuesString[:-1] + ");")
+                for i, analysisNode in enumerate(output[1].values()):
+                    try:
+                        valuesOutputValues = [analysisNode.valueNode.__dict__[x] for x in valueValuesForOutput]
+                    except AttributeError:
+                        print(analysisNode)
+                    analysisOutputValues = [analysisNode.__dict__[x] for x in valuesForOutput]
 
-                outputValuesCombined = valuesOutputValues + analysisOutputValues
-                s.altConn.execute(f"""INSERT INTO {name} ({output.valueNode.name}, {i}, {', '.join([x for x in outputValuesCombined])})""")
+                    outputValuesCombined = valuesOutputValues + analysisOutputValues
+                    try:
+                        s.altConn.execute(f"""INSERT INTO {altName} VALUES({i}, '{analysisNode.valueNode.n}',  {', '.join([str(x) if isinstance(x, (float, int)) else "-1" for x in outputValuesCombined])})""")
+                    except (TypeError, sqlite3.OperationalError) as e:
+                        print(f"""INSERT INTO {altName} VALUES({i}, '{analysisNode.valueNode.n}',  {', '.join([str(x) if isinstance(x, (float, int)) else "-1" for x in outputValuesCombined])})""")
+                        raise e
+            else:
+                continue
+                s.altConn.execute(f"""CREATE TABLE {name} (
+\tid integer PRIMARY KEY,
+\tname text,
+\tvalue float,
+\tstrValue text);""")
+                for i, analysisValue in enumerate(output[1]):
+                    print(f"""INSERT INTO {name} VALUES({i}, '{analysisValue}',  {output[1][analysisValue]}), ''""")
+                    if isinstance(output[1][analysisValue], str):
+                        s.altConn.execute(f"""INSERT INTO {name} VALUES({i}, '{analysisValue}',  0, '{output[1][analysisValue]}')""")
+                    else:
+                        s.altConn.execute(f"""INSERT INTO {name} VALUES({i}, '{analysisValue}',  {output[1][analysisValue]}, '')""")
         s.altConn.commit()
-        
-        
-
-    
-    
-    
     def _AnalyseNode_(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
         """Deprecated"""
         
@@ -912,16 +968,7 @@ class ReplayGUI:
 
         match, players, teams = s.analysisEngine.GetReplay(gameIDs[0])
 
-        playersAnalysed, teamsAnalysed = s.analysisEngine.CompareReplaySelf(players, teams)
-
-
-        for element in playersAnalysed:
-            print(f"{element} : {playersAnalysed[element]}")
-
-        for element in teamsAnalysed:
-            continue
-            print(f"{element} : {teamsAnalysed[element]}")
-
+        s.analysisEngine.CompareReplaySelf(players, teams)
 
 
 
