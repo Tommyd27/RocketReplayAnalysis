@@ -1,5 +1,4 @@
 import sqlite3
-import tkinter as tk
 import kivy
 from string import ascii_letters
 from collections import Counter
