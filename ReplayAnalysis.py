@@ -1,9 +1,15 @@
 import sqlite3
-import kivy
+
 from string import ascii_letters
 from collections import Counter
 from tkinter import ttk
 from os import remove
+
+import kivy
+kivy.require('2.1.0') # replace with your current kivy version !
+
+from kivy.app import App
+from kivy.uix.label import Label
 
 def sign(val):
     if val == 0:
@@ -863,15 +869,12 @@ class ReplayAnalysis:
 
         return analyseNode
 
-class ReplayGUI():
-    pass
+
+class ReplayGUI(App):
+
+    def build(self):
+        return Label(text='Hello world')
 
 
-
-
-
-
-
-
-if __name__ == "__main__":
-    gui = ReplayGUI()
+if __name__ == '__main__':
+    ReplayGUI().run()
