@@ -11,6 +11,17 @@ kivy.require('2.1.0') # replace with your current kivy version !
 from kivy.app import App
 from kivy.uix.label import Label
 
+def RoundToX(num, base):
+    return base * round(num / base)
+def CalculateMedian(values, medianType = 0.5):
+    lenValues = len(values)
+    midValue = (lenValues + 1) * medianType
+    if midValue % 1 == 0:
+        return values[midValue]
+    else:
+        midValue = int(midValue)
+        return (values[midValue] + values[midValue + 1]) / 2
+def CalculateStandardDeviation(values)
 def sign(val):
     if val == 0:
         return 0
@@ -146,8 +157,20 @@ class ValueNode:
         node.calculatedValue = cachedValue
         return node
 class StatNode():
-    def __init__(self, valueNode, values) -> None:
-        
+    def __init__(self, valueNode : ValueNode, values) -> None:
+        name = valueNode.n
+        self.numValues = len(values)
+        if valueNode.valueRangeType == 0:
+            self.mean = sum(values) / self.numValues
+            self.quartiles = [CalculateMedian(values, x) for x in (0.25, 0.5, 0.75)]
+            self.mode = max(values, key = values.count)
+
+
+
+        else:
+            pass
+
+""""""""""""""""""""""""""""""""""""""""""""""""
 valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"), 
                     ValueNode('neutralPossessionTime', percentage = "durationCalculated", valueType = "Match"),
                     ValueNode('bTimeGround', percentage = "durationCalculated", valueType = "Match"),
