@@ -69,7 +69,7 @@ analysisNodeDictionary = {"default" : {"analysisType" : 0, "accountForDuplicates
                           
                          }
 punishDuplicatesAvg = {"default" : 0.2}
-
+statNodes = {}
 percentageAccountValues = {"default" : [0.7, 0.2]}
 
 
@@ -145,7 +145,9 @@ class ValueNode:
                 cachedValue /= 1
         node.calculatedValue = cachedValue
         return node
- 
+class StatNode():
+    def __init__(self, valueNode, values) -> None:
+        
 valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"), 
                     ValueNode('neutralPossessionTime', percentage = "durationCalculated", valueType = "Match"),
                     ValueNode('bTimeGround', percentage = "durationCalculated", valueType = "Match"),
