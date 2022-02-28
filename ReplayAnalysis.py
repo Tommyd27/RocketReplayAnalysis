@@ -21,7 +21,17 @@ def CalculateMedian(values, medianType = 0.5):
     else:
         midValue = int(midValue)
         return (values[midValue] + values[midValue + 1]) / 2
-def CalculateStandardDeviation(values)
+def CalculateStandardDeviation(values, mean = False):
+    lenValues = len(values)
+    if not mean:
+        mean = sum(values) / lenValues
+    sumSquared = sum([x ** 2 for x in values])
+
+    variation = (sumSquared / lenValues) - mean ** 2
+    standardDeviation = variation ** 0.5
+
+    return standardDeviation
+    
 def sign(val):
     if val == 0:
         return 0
