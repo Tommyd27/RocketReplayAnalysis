@@ -170,15 +170,25 @@ class StatNode():
     def __init__(self, valueNode : ValueNode, values) -> None:
         name = valueNode.n
         self.numValues = len(values)
+        self.values = values
         if valueNode.valueRangeType == 0:
             self.mean = sum(values) / self.numValues
             self.quartiles = [CalculateMedian(values, x) for x in (0.25, 0.5, 0.75)]
             self.mode = max(values, key = values.count)
-
-
-
+            self.valuesCounter = Counter(self.values)
+            self.standardDeviation = CalculateStandardDeviation(values, self.mean)
+            try:
+                groupValue = statNodes[name]["groupValue"]
+            except KeyError:
+                groupValue = round(0.1 * (self.quartiles[2] - self.quartiles[0]))  
+            self.groupValue = groupValue
+            self.groupedValues = [RoundToX(x, groupValue) for x in values]
+            self.groupedMode = max(self.groupedValues, key = self.groupedValues.count)
+            self.groupedValuesCounter = Counter(self.groupedValues)
         else:
-            pass
+            self.mode = max(values, key = lambda x : values[x])
+            self.mean = self.mode
+            self.valuesCounter = values
 
 """"""""""""""""""""""""""""""""""""""""""""""""
 valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"), 
@@ -667,6 +677,8 @@ class ReplayAnalysis:
         executeSTR = f"SELECT matchID FROM matchTable ORDER BY matchID DESC{tagsSTR};"
 
         self.c.execute(executeSTR)
+
+
         if num < 1:
             matchIDs = [x[0] for x in self.c.fetchall()]
         else:
@@ -680,6 +692,7 @@ class ReplayAnalysis:
 
         self.c.execute(f"SELECT {playerNodesToSelectSTR} FROM playerMatchTable WHERE matchID in {matchIDsSTR}")
         playerLists = self.c.fetchall()
+        
         self.matches = []
         self.matches = [Match(x) for x in matchLists]
         self.matchesDict = {x.mL[0] : x for x in self.matches}
@@ -687,6 +700,16 @@ class ReplayAnalysis:
         for player in playerLists:
             self.players.append(Player(player, self.matchesDict[player[-1]].mL))
         self.teamsD = {}
+        self.statNodes = []
+        
+        for valueNode in valueNodes:
+            valueNode : ValueNode
+            if valueNode.valueType == "Player":
+                allValues = [x.valueNodes[valueNode.name] for x in self.players]
+            else:
+                allValues = [x.valueNodes[valueNode.name] for x in self.teams]
+
+
         if loadTeams:
             for player in self.players:
                 try:
