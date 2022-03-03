@@ -163,33 +163,52 @@ class ValueNode:
                 else:
                     cachedValue /= percentageOf
             else:
-                cachedValue /= 1
+                cachedValue = -1
         node.calculatedValue = cachedValue
         return node
-class StatNode():
+class StatNode:
     def __init__(self, valueNode : ValueNode, values) -> None:
         name = valueNode.n
-        self.numValues = len(values)
-        self.values = values
-        if valueNode.valueRangeType == 0:
-            self.mean = sum(values) / self.numValues
-            self.quartiles = [CalculateMedian(values, x) for x in (0.25, 0.5, 0.75)]
-            self.mode = max(values, key = values.count)
-            self.valuesCounter = Counter(self.values)
-            self.standardDeviation = CalculateStandardDeviation(values, self.mean)
+        self.valueNode = valueNode
+        self.values = [x for x in values if x.calculatedValue != -1]
+        self.numValues = len(self.values)
+        self.calculatedValues = [x.calculatedValue for x in self.values]
+        if valueNode.p:
+            self.rawValues = [x.rawValue for x in self.values]
+        
+        
+    def CalculateStats(self, values, prefix = ""):
+        name = self.valueNode.n
+        if self.valueNode.valueRangeType == 0:
+            self.__dict__[f"{prefix}Mean"] = sum(values) / len(values)
+            self.__dict__[f"{prefix}Quartiles"] = [CalculateMedian(values, x) for x in (0.25, 0.5, 0.75)]
+            self.__dict__[f"{prefix}Mode"] = max(values, key = values.count)
+            self.__dict__[f"{prefix}ValuesCounter"] = Counter(self.values)
+            self.__dict__[f"{prefix}StandardDeviation"] = CalculateStandardDeviation(values, self.__dict__[f"{prefix}Mean"])
             try:
                 groupValue = statNodes[name]["groupValue"]
             except KeyError:
-                groupValue = round(0.1 * (self.quartiles[2] - self.quartiles[0]))  
-            self.groupValue = groupValue
-            self.groupedValues = [RoundToX(x, groupValue) for x in values]
-            self.groupedMode = max(self.groupedValues, key = self.groupedValues.count)
-            self.groupedValuesCounter = Counter(self.groupedValues)
+                groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]))  
+            self.__dict__[f"{prefix}GroupValue"] = groupValue
+            self.__dict__[f"{prefix}GroupedValues"] = [RoundToX(x, groupValue) for x in values]
+            self.__dict__[f"{prefix}GroupedMode"] = max(self.__dict__[f"{prefix}GroupedValues"]s, key = self.__dict__[f"{prefix}GroupedValues"])
+            self.__dict__[f"{prefix}GroupedValuesCounter"] = Counter(self.__dict__[f"{prefix}GroupedValues"])
         else:
-            self.mode = max(values, key = lambda x : values[x])
-            self.mean = self.mode
-            self.valuesCounter = values
-
+            counterValues = Counter(values)
+            self.__dict__[f"{prefix}Mode"] = max(counterValues, key = lambda x : counterValues[x])
+            self.__dict__[f"{prefix}Mean"] = self.__dict__[f"{prefix}Mode"]
+            self.__dict__[f"{prefix}ValuesCounter"] = counterValues
+    def __repr__(s) -> str:
+        output = f"{s.name.title()}:"
+        output += f"\nAnalysis Type : {s.valueNode.valueRangeType}"
+        output += f"\nMean : {s.mean}"
+        output += f"\nMode : {s.mode}"
+        if s.valueNode.valueRangeType == 0:
+            output += f"\nQuartiles: {s.quartiles}"
+            output += f"\nStandard Deviation: {s.standardDeviation}"
+            output += f"\nGrouped Mode: {s.groupedMode}"
+            output += f"\nGroup Value: {s.groupValue}"
+        return output
 """"""""""""""""""""""""""""""""""""""""""""""""
 valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"), 
                     ValueNode('neutralPossessionTime', percentage = "durationCalculated", valueType = "Match"),
@@ -621,13 +640,13 @@ class Match:
 
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, args = None):
-        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
 
-        #self.altdbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
-        self.altdbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
+        self.altdbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
+        #self.altdbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
         #self.altdbFile = ":memory:"
         self.altConn = False
         if loadReplays:
@@ -701,13 +720,15 @@ class ReplayAnalysis:
             self.players.append(Player(player, self.matchesDict[player[-1]].mL))
         self.teamsD = {}
         self.statNodes = []
-        
-        for valueNode in valueNodes:
+        for valueNode in list(valueNodes["Match"].values()) + list(valueNodes["Player"].values()):
+            if valueNode.c:
+                continue
             valueNode : ValueNode
             if valueNode.valueType == "Player":
-                allValues = [x.valueNodes[valueNode.name] for x in self.players]
-            else:
-                allValues = [x.valueNodes[valueNode.name] for x in self.teams]
+                allValues = [x.valueNodes[valueNode.n] for x in self.players]
+            elif valueNode.valueType == "Match":
+                allValues = [x.valueNodes[valueNode.n] for x in self.matches]
+            self.statNodes.append(StatNode(valueNode, allValues))
 
 
         if loadTeams:
@@ -935,4 +956,9 @@ class ReplayGUI(App):
 
 
 if __name__ == '__main__':
-    ReplayGUI().run()
+    replayEngine = ReplayAnalysis()
+
+    for statNode in replayEngine.statNodes:
+        print(statNode)
+        input()
+    "ReplayGUI().run()"
