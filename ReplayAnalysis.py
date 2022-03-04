@@ -16,8 +16,9 @@ def RoundToX(num, base):
 def CalculateMedian(values, medianType = 0.5):
     lenValues = len(values)
     midValue = (lenValues + 1) * medianType
+    values.sort()
     if midValue % 1 == 0:
-        return values[midValue]
+        return values[int(midValue)]
     else:
         midValue = int(midValue)
         return (values[midValue] + values[midValue + 1]) / 2
@@ -173,41 +174,53 @@ class StatNode:
         self.values = [x for x in values if x.calculatedValue != -1]
         self.numValues = len(self.values)
         self.calculatedValues = [x.calculatedValue for x in self.values]
+
+        self.CalculateStats(self.calculatedValues)
+
         if valueNode.p:
             self.rawValues = [x.rawValue for x in self.values]
-        
-        
+            self.CalculateStats(self.rawValues, "raw")        
     def CalculateStats(self, values, prefix = ""):
         name = self.valueNode.n
         if self.valueNode.valueRangeType == 0:
             self.__dict__[f"{prefix}Mean"] = sum(values) / len(values)
             self.__dict__[f"{prefix}Quartiles"] = [CalculateMedian(values, x) for x in (0.25, 0.5, 0.75)]
             self.__dict__[f"{prefix}Mode"] = max(values, key = values.count)
-            self.__dict__[f"{prefix}ValuesCounter"] = Counter(self.values)
+            self.__dict__[f"{prefix}ValuesCounter"] = Counter(values)
             self.__dict__[f"{prefix}StandardDeviation"] = CalculateStandardDeviation(values, self.__dict__[f"{prefix}Mean"])
             try:
                 groupValue = statNodes[name]["groupValue"]
             except KeyError:
-                groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]))  
+                groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]))
+                if groupValue == 0:
+                    print(name)
+                    print(values)
+                    input()  
             self.__dict__[f"{prefix}GroupValue"] = groupValue
             self.__dict__[f"{prefix}GroupedValues"] = [RoundToX(x, groupValue) for x in values]
-            self.__dict__[f"{prefix}GroupedMode"] = max(self.__dict__[f"{prefix}GroupedValues"]s, key = self.__dict__[f"{prefix}GroupedValues"])
+            self.__dict__[f"{prefix}GroupedMode"] = max(self.__dict__[f"{prefix}GroupedValues"], key = self.__dict__[f"{prefix}GroupedValues"].count)
             self.__dict__[f"{prefix}GroupedValuesCounter"] = Counter(self.__dict__[f"{prefix}GroupedValues"])
         else:
             counterValues = Counter(values)
             self.__dict__[f"{prefix}Mode"] = max(counterValues, key = lambda x : counterValues[x])
             self.__dict__[f"{prefix}Mean"] = self.__dict__[f"{prefix}Mode"]
             self.__dict__[f"{prefix}ValuesCounter"] = counterValues
+    def OutputValuesStr(s, prefix = ""):
+        output = "\n"
+        output += f"\nMean : {s.__dict__[f'{prefix}Mean']}"
+        output += f"\nMode : {s.__dict__[f'{prefix}Mode']}"
+        if s.valueNode.valueRangeType == 0:
+            output += f"\nQuartiles: {s.__dict__[f'{prefix}Quartiles']}"
+            output += f"\nStandard Deviation: {s.__dict__[f'{prefix}StandardDeviation']}"
+            output += f"\nGrouped Mode: {s.__dict__[f'{prefix}GroupedMode']}"
+            output += f"\nGroup Value: {s.__dict__[f'{prefix}GroupValue']}"
+        return output
     def __repr__(s) -> str:
         output = f"{s.name.title()}:"
         output += f"\nAnalysis Type : {s.valueNode.valueRangeType}"
-        output += f"\nMean : {s.mean}"
-        output += f"\nMode : {s.mode}"
-        if s.valueNode.valueRangeType == 0:
-            output += f"\nQuartiles: {s.quartiles}"
-            output += f"\nStandard Deviation: {s.standardDeviation}"
-            output += f"\nGrouped Mode: {s.groupedMode}"
-            output += f"\nGroup Value: {s.groupValue}"
+        output += s.OutputValuesStr()
+        if s.valueNode.p:
+            output += s.OutputValuesStr("raw")
         return output
 """"""""""""""""""""""""""""""""""""""""""""""""
 valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"), 
