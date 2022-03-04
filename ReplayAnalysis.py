@@ -13,10 +13,11 @@ from kivy.uix.label import Label
 
 def RoundToX(num, base):
     return base * round(num / base)
-def CalculateMedian(values, medianType = 0.5):
+def CalculateMedian(values, medianType = 0.5, sort = True):
     lenValues = len(values)
     midValue = (lenValues + 1) * medianType
-    values.sort()
+    if sort:
+        values.sort()
     if midValue % 1 == 0:
         return values[int(midValue)]
     else:
@@ -181,10 +182,11 @@ class StatNode:
             self.rawValues = [x.rawValue for x in self.values]
             self.CalculateStats(self.rawValues, "raw")        
     def CalculateStats(self, values, prefix = ""):
+        values.sort()
         name = self.valueNode.n
         if self.valueNode.valueRangeType == 0:
             self.__dict__[f"{prefix}Mean"] = sum(values) / len(values)
-            self.__dict__[f"{prefix}Quartiles"] = [CalculateMedian(values, x) for x in (0.25, 0.5, 0.75)]
+            self.__dict__[f"{prefix}Quartiles"] = [CalculateMedian(values, x, False) for x in (0.25, 0.5, 0.75)]
             self.__dict__[f"{prefix}Mode"] = max(values, key = values.count)
             self.__dict__[f"{prefix}ValuesCounter"] = Counter(values)
             self.__dict__[f"{prefix}StandardDeviation"] = CalculateStandardDeviation(values, self.__dict__[f"{prefix}Mean"])
