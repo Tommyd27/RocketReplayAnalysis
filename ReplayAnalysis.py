@@ -32,8 +32,7 @@ def CalculateStandardDeviation(values, mean = False):
     variation = (sumSquared / lenValues) - mean ** 2
     standardDeviation = variation ** 0.5
 
-    return standardDeviation
-    
+    return standardDeviation   
 def sign(val):
     if val == 0:
         return 0
@@ -193,10 +192,15 @@ class StatNode:
             try:
                 groupValue = statNodes[name]["groupValue"]
             except KeyError:
-                groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]))
+                if self.__dict__[f"{prefix}Quartiles"][1] > 1:
+                    groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]))
+                else:
+                    #groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]), 2)
+                    groupValue = 0.01
                 if groupValue == 0:
                     print(name)
                     print(values)
+                    print(self.Quartiles)
                     input()  
             self.__dict__[f"{prefix}GroupValue"] = groupValue
             self.__dict__[f"{prefix}GroupedValues"] = [RoundToX(x, groupValue) for x in values]
