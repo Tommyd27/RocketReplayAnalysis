@@ -169,7 +169,7 @@ class ValueNode:
         return node
 class StatNode:
     def __init__(self, valueNode : ValueNode, values) -> None:
-        name = valueNode.n
+        self.name = valueNode.n
         self.valueNode = valueNode
         self.values = [x for x in values if x.calculatedValue != -1]
         self.numValues = len(self.values)
@@ -192,15 +192,20 @@ class StatNode:
             try:
                 groupValue = statNodes[name]["groupValue"]
             except KeyError:
-                if self.__dict__[f"{prefix}Quartiles"][1] > 1:
+                if self.__dict__[f"{prefix}Quartiles"][1] > 10:
                     groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]))
-                else:
+                elif self.__dict__[f"{prefix}Quartiles"][1] > 1:
                     #groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]), 2)
+                    groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]), 1)
+                else:
                     groupValue = 0.01
                 if groupValue == 0:
                     print(name)
                     print(values)
-                    print(self.Quartiles)
+                    print(self.rawQuartiles)
+                    print(self.__dict__[f"{prefix}Quartiles"])
+                    print(prefix)
+                    print(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]))
                     input()  
             self.__dict__[f"{prefix}GroupValue"] = groupValue
             self.__dict__[f"{prefix}GroupedValues"] = [RoundToX(x, groupValue) for x in values]
@@ -238,7 +243,7 @@ valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"),
                     ValueNode('bTimeNearWall', percentage = "durationCalculated", valueType = "Match"),
                     ValueNode('bTimeInCorner', percentage = "durationCalculated", valueType = "Match"),
                     ValueNode('bTimeOnWall', percentage = "durationCalculated", valueType = "Match"),
-                    ValueNode('bAverageSpeed'),],
+                    ValueNode('bAverageSpeed', valueType= "Match"),],
               "Player": [ValueNode('carName', teamStat = False, valueRangeType = 1), 
                     ValueNode('bUsage'),
                     ValueNode('bPerMinute'),
@@ -541,11 +546,23 @@ class PlayerHistoric(Player):
         if intensiveStats:
             s.goalSequencesDictionary = {}
             for playerMatch in players:
-                colour = playerMatch[8]
+                colour = playerMatch.mL[8]
                 orangeWin = playerMatch.mL[9] > playerMatch.mL[10]
                 win = int(orangeWin if colour == "orange" else not orangeWin)
-                goalSequence = playerMatch.mL[11]
+                try:
+                    goalSequence = [int (x) for x in playerMatch.mL[11]]
+                except TypeError:
+                    continue
+                except ValueError:
+                    print(f"Invalid Goal Sequence Initiation: {playerMatch.mL[11]}")
+                    continue
                 teamSize = playerMatch.mL[4]
+                if len(goalSequence) == 0:
+                    print(f"Invalid Goal Sequence Len: {goalSequence}")
+                    continue
+                if goalSequence[0] > 8:
+                    print(f"Goal Sequence IDs out of Bounds: {goalSequence}")
+                    continue
                 if colour == "orange":
                     goalSequence = [0 if x > teamSize else 1 for x in goalSequence]
                 else:
@@ -555,10 +572,17 @@ class PlayerHistoric(Player):
                 for goal in goalSequence:
                     currentScore[goal] += 1
                     try:
-                        s.goalSequencesDictionary[currentScore][win] += 1
+                        s.goalSequencesDictionary[str(currentScore)][win] += 1
                     except KeyError:
-                        s.goalSequencesDictionary[currentScore] = [0, 0]
-                        s.goalSequencesDictionary[currentScore][win] += 1
+                        s.goalSequencesDictionary[str(currentScore)] = [0, 0]
+                        s.goalSequencesDictionary[str(currentScore)][win] += 1
+                    except TypeError as e:
+                        print(s.goalSequencesDictionary)
+                        print(s.goalSequencesDictionary[currentScore])
+                        print(s.goalSequencesDictionary[currentScore][win])
+                        print(currentScore)
+                        print(win)
+                        raise e
                 
                 
 
@@ -739,16 +763,6 @@ class ReplayAnalysis:
             self.players.append(Player(player, self.matchesDict[player[-1]].mL))
         self.teamsD = {}
         self.statNodes = []
-        for valueNode in list(valueNodes["Match"].values()) + list(valueNodes["Player"].values()):
-            if valueNode.c:
-                continue
-            valueNode : ValueNode
-            if valueNode.valueType == "Player":
-                allValues = [x.valueNodes[valueNode.n] for x in self.players]
-            elif valueNode.valueType == "Match":
-                allValues = [x.valueNodes[valueNode.n] for x in self.matches]
-            self.statNodes.append(StatNode(valueNode, allValues))
-
 
         if loadTeams:
             for player in self.players:
@@ -791,6 +805,17 @@ class ReplayAnalysis:
                 self.historicPlayers.append(PlayerHistoric(hPlayer))
         if instantiateHistoricTeams:
             pass
+        
+        for valueNode in list(valueNodes["Match"].values()) + list(valueNodes["Player"].values()):
+            print(valueNode.n)
+            if valueNode.c:
+                continue
+            valueNode : ValueNode
+            if valueNode.valueType == "Player":
+                allValues = [x.valueNodes[valueNode.n] for x in self.players]
+            elif valueNode.valueType == "Match":
+                allValues = [x.valueNodes[valueNode.n] for x in self.matches]
+            self.statNodes.append(StatNode(valueNode, allValues))
     def CompareReplaySelf(s, gamePlayers, gameTeams):
         playerStats = {}
         for statName in valueNodes["Player"]:
@@ -976,7 +1001,7 @@ class ReplayGUI(App):
 
 if __name__ == '__main__':
     replayEngine = ReplayAnalysis()
-
+    print("erer")
     for statNode in replayEngine.statNodes:
         print(statNode)
         input()
