@@ -687,8 +687,8 @@ class Match:
 
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, args = None):
-        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
 
@@ -1004,9 +1004,8 @@ class ReplayGUI(App):
 
 
 if __name__ == '__main__':
-    replayEngine = ReplayAnalysis()
-    print("erer")
-    for statNode in replayEngine.statNodes:
-        print(statNode)
-        input()
-    "ReplayGUI().run()"
+    replayEngine = ReplayAnalysis(loadReplays = False)
+    #for statNode in replayEngine.statNodes:
+    #    print(statNode)
+    #    input()
+    ReplayGUI().run()
