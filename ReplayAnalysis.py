@@ -218,13 +218,17 @@ class StatNode:
             self.__dict__[f"{prefix}ValuesCounter"] = counterValues
     def OutputValuesStr(s, prefix = ""):
         output = "\n"
-        output += f"\nMean : {s.__dict__[f'{prefix}Mean']}"
-        output += f"\nMode : {s.__dict__[f'{prefix}Mode']}"
+        
         if s.valueNode.valueRangeType == 0:
-            output += f"\nQuartiles: {s.__dict__[f'{prefix}Quartiles']}"
-            output += f"\nStandard Deviation: {s.__dict__[f'{prefix}StandardDeviation']}"
-            output += f"\nGrouped Mode: {s.__dict__[f'{prefix}GroupedMode']}"
-            output += f"\nGroup Value: {s.__dict__[f'{prefix}GroupValue']}"
+            output += f"\nMean : {round(s.__dict__[f'{prefix}Mean'], 2)}"
+            output += f"\nMode : {round(s.__dict__[f'{prefix}Mode'], 2)}"
+            output += f"\nQuartiles: {[round(x, 2) for x in s.__dict__[f'{prefix}Quartiles']]}"
+            output += f"\nStandard Deviation: {round(s.__dict__[f'{prefix}StandardDeviation'], 2)}"
+            output += f"\nGrouped Mode: {round(s.__dict__[f'{prefix}GroupedMode'], 2)}"
+            output += f"\nGroup Value: {round(s.__dict__[f'{prefix}GroupValue'], 2)}"
+        else:
+            output += f"\nMean : {s.__dict__[f'{prefix}Mean']}"
+            output += f"\nMode : {s.__dict__[f'{prefix}Mode']}"
         return output
     def __repr__(s) -> str:
         output = f"{s.name.title()}:"
@@ -550,8 +554,8 @@ class PlayerHistoric(Player):
                 orangeWin = playerMatch.mL[9] > playerMatch.mL[10]
                 win = int(orangeWin if colour == "orange" else not orangeWin)
                 try:
-                    goalSequence = [int (x) for x in playerMatch.mL[11]]
-                except TypeError:
+                    goalSequence = [int (x) for x in playerMatch.mL[11].split(",")]
+                except (TypeError, AttributeError):
                     continue
                 except ValueError:
                     print(f"Invalid Goal Sequence Initiation: {playerMatch.mL[11]}")
