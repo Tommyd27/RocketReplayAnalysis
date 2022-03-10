@@ -1,8 +1,8 @@
+
 import sqlite3
 
 from string import ascii_letters
 from collections import Counter
-from tkinter import ttk
 from os import remove
 
 
@@ -394,44 +394,43 @@ class AnalysisNode:
         
         if againstValues:
             s.valueIndex = againstValues.index(valueNode.calculatedValue)
-            match s.analysisType:
-                case 0:
-                    if typeOfAnalysis == 0:
-                        try:
-                            average = sum(againstValues) / len(againstValues)
-                        except TypeError as e:
-                            print(againstValues)
-                            raise e
-                        s.againstValue = average
-                        s.rawWeight = valueNode.calculatedValue / average
+            if s.analysisType == 0:
+                if typeOfAnalysis == 0:
+                    try:
+                        average = sum(againstValues) / len(againstValues)
+                    except TypeError as e:
+                        print(againstValues)
+                        raise e
+                    s.againstValue = average
+                    s.rawWeight = valueNode.calculatedValue / average
 
-                        if s.percentageAccountForValue:
-                            s.rawWeight *= s.percentageAccountForValue[0]
-                            
-                            weightEffect = valueNode.calculatedValue * s.percentageAccountForValue[1]
-                            
-                            s.alteredWeight += weightEffect
+                    if s.percentageAccountForValue:
+                        s.rawWeight *= s.percentageAccountForValue[0]
+                        
+                        weightEffect = valueNode.calculatedValue * s.percentageAccountForValue[1]
+                        
+                        s.alteredWeight += weightEffect
 
-                        s.equalisedWeight = s.rawWeight - 1
-                        s.alteredWeight = s.equalisedWeight
-                        if s.punishDuplicates:
-                            repeats = againstValues.count(valueNode.calculatedValue) - 1
-                            weightEffect = repeats * s.punishDuplicates
-                            s.alteredWeight -= weightEffect * sign(s.alteredWeight)
-                            
-
-
-
-                        s.calculatedWeight = s.equalisedWeight * s.relevancy
-                    else:
-                        "magic here"
-                case 1 | 2:
-                    relativeAppearances = againstValues.count(valueNode.calculatedValue) / len(againstValues)
-                    s.rawWeight = (1 / pow(relativeAppearances, 0.5))
-
-                    s.alteredWeight = s.rawWeight
                     s.equalisedWeight = s.rawWeight - 1
+                    s.alteredWeight = s.equalisedWeight
+                    if s.punishDuplicates:
+                        repeats = againstValues.count(valueNode.calculatedValue) - 1
+                        weightEffect = repeats * s.punishDuplicates
+                        s.alteredWeight -= weightEffect * sign(s.alteredWeight)
+                        
+
+
+
                     s.calculatedWeight = s.equalisedWeight * s.relevancy
+                else:
+                    "magic here"
+            if s.analysisType in [1, 2]:
+                relativeAppearances = againstValues.count(valueNode.calculatedValue) / len(againstValues)
+                s.rawWeight = (1 / pow(relativeAppearances, 0.5))
+
+                s.alteredWeight = s.rawWeight
+                s.equalisedWeight = s.rawWeight - 1
+                s.calculatedWeight = s.equalisedWeight * s.relevancy
     def __repr__(s) -> str:
         output = f"{s.valueNode}, Raw Weight: {s.rawWeight}, Calculated Weight: {s.calculatedWeight}"
         return output
@@ -477,12 +476,14 @@ class Player:
             node : ValueNode
             if node.c:
                 if node.c == True:
-                    match node.n:
-                        case "scoredFirst":
-                            try:
-                                calcVariables = [playerList[0] == matchList[11][0]]
-                            except (TypeError, IndexError):
-                                calcVariables = [-1]
+                    if node.n == "scoredFirst":
+                        try:
+                            calcVariables = [playerList[0] == matchList[11][0]]
+                        except (TypeError, IndexError):
+                            calcVariables = [-1]
+                    else:
+                        print(node.n)
+                        raise NotImplementedError("Da Fuq")
                 else:
                     calcVariables = [x.calculatedValue for x in self.valueNodes.values() if x.n in node.c[1:]]
             else:
@@ -492,15 +493,17 @@ class Player:
                 if node.p in retrievalNodes["Player"]:
                     divValue = playerList[retrievalNodes["Player"].index(node.p)]
                 else:
-                    match node.p:
-                        case "teamGoals":
-                            teamGoalsIndex = 10 if playerList[8] == "blue" else 9
-                            divValue = matchList[teamGoalsIndex]
-                        case "totalFifties":
-                            try:
-                                divValue = playerList[retrievalNodes["Player"].index("fiftyWins")] + playerList[retrievalNodes["Player"].index("fiftyLosses")] + playerList[retrievalNodes["Player"].index("fiftyDraws")]
-                            except TypeError:
-                                divValue = -1
+                    if node.p == "teamGoals":
+                        teamGoalsIndex = 10 if playerList[8] == "blue" else 9
+                        divValue = matchList[teamGoalsIndex]
+                    elif node.p == "totalFifties":
+                        try:
+                            divValue = playerList[retrievalNodes["Player"].index("fiftyWins")] + playerList[retrievalNodes["Player"].index("fiftyLosses")] + playerList[retrievalNodes["Player"].index("fiftyDraws")]
+                        except TypeError:
+                            divValue = -1
+                    else:
+                        print(node.n)
+                        raise NotImplementedError("Da Fuq")
                 if divValue in [None, "NaN"]:
                     divValue = -1
             else:
@@ -515,23 +518,22 @@ class PlayerHistoric(Player):
         s.iS = intensiveStats
         s.id = players[0].pList[1]
         for stat in valueNodes["Player"].values():
-            match stat.valueRangeType:
-                case 0:
-                    aList = [x.valueNodes[stat.n].calculatedValue for x in players if stat.n in x.valueNodes and x.valueNodes[stat.n].calculatedValue != -1]
-                    try:
-                        aSum = sum(aList)
-                    except TypeError as e:
-                        print(aList)
-                        raise e
-                    try:
-                        aAvg = aSum / len(aList)
-                    except ZeroDivisionError:
-                        aAvg = -1
+            if stat.valueRangeType == 0:
+                aList = [x.valueNodes[stat.n].calculatedValue for x in players if stat.n in x.valueNodes and x.valueNodes[stat.n].calculatedValue != -1]
+                try:
+                    aSum = sum(aList)
+                except TypeError as e:
+                    print(aList)
+                    raise e
+                try:
+                    aAvg = aSum / len(aList)
+                except ZeroDivisionError:
+                    aAvg = -1
 
-                    s.averageValues[stat.n] = [aAvg, aList]
-                case 1 | 2:
-                    allValues = [p.valueNodes[stat.n].calculatedValue for p in players if stat.n in p.valueNodes]
-                    s.averageValues[stat.n] = Counter(allValues)
+                s.averageValues[stat.n] = [aAvg, aList]
+            else:
+                allValues = [p.valueNodes[stat.n].calculatedValue for p in players if stat.n in p.valueNodes]
+                s.averageValues[stat.n] = Counter(allValues)
         ["matchID", "gameID", "map", "matchType", 
                 "teamSize", "durationCalculated", "durationBallchasing", 
                 "overtime", "nFrames", "orangeScore", "blueScore", 
@@ -626,15 +628,14 @@ class Team:
                 else:
                     calculatedValue = sum(playerStatValues) / len(playerStatValues)
             except TypeError as e:
-                match node.n:
-                    case "scoredFirst":
-                        playerStatValues = [x[i].calculatedValue for x in playersValues]
-                        calculatedValue = True in playerStatValues
-                    case _:
-                        print("Error")
-                        print(node.n)
-                        print([x[i].v for x in playersValues if x[i].v not in [-1, None]])
-                        raise e
+                if node.n == "scoredFirst":
+                    playerStatValues = [x[i].calculatedValue for x in playersValues]
+                    calculatedValue = True in playerStatValues
+                else:
+                    print("Error")
+                    print(node.n)
+                    print([x[i].v for x in playersValues if x[i].v not in [-1, None]])
+                    raise e
             self.valueNodes[node.n] = node.GiveValue(calculatedValue, individualPlayers = playerStatValues, teamCalculation = True)
 
         teamPlayerIDs = [x.pList[0] for x in players]
@@ -912,57 +913,56 @@ class ReplayAnalysis:
                 node.cR = 0
                 node.pos = "N/A"
             else:
-                match node.aT:
-                    case 0:
-                        nodesAll = [xPlayer.nodes[node.n].v for xPlayer in nodesList if xPlayer.nodes[node.n].v not in [-1, "NaN", None]]
-                        if aType == "top":
-                            nodesListInsert = nodesAll
-                            nodesListInsert.append(node.v)
-                            try:
-                                nodesListInsert.sort()
-                            except TypeError as e:
-                                print(node.n)
-                                print(nodesListInsert)
-                                raise e
+                if node.aT == 0:
+                    nodesAll = [xPlayer.nodes[node.n].v for xPlayer in nodesList if xPlayer.nodes[node.n].v not in [-1, "NaN", None]]
+                    if aType == "top":
+                        nodesListInsert = nodesAll
+                        nodesListInsert.append(node.v)
+                        try:
+                            nodesListInsert.sort()
+                        except TypeError as e:
+                            print(node.n)
+                            print(nodesListInsert)
+                            raise e
 
-                            valueIndex = nodesListInsert.index(node.v)
-                            listLength = len(nodesListInsert)
-                            node.pos = (valueIndex, listLength)
-                            node.rR = valueIndex / (listLength - 1)
-                            node.cR = node.rR
-                            node.cR -= 0.5
-                            if node.aFD:
-                                node.cR += nodesListInsert.count(node.v) / (listLength - 1)
-                            if node.pD:
-                                node.cR *= float(node.pD) * (1 - nodesListInsert.count(node.v) / listLength)
-                            if valueIndex < extraTopRelevance or listLength - extraTopRelevance <= valueIndex:
-                                node.cR *= 1.1 + min(valueIndex, listLength - valueIndex - 1) * 0.02
+                        valueIndex = nodesListInsert.index(node.v)
+                        listLength = len(nodesListInsert)
+                        node.pos = (valueIndex, listLength)
+                        node.rR = valueIndex / (listLength - 1)
+                        node.cR = node.rR
+                        node.cR -= 0.5
+                        if node.aFD:
+                            node.cR += nodesListInsert.count(node.v) / (listLength - 1)
+                        if node.pD:
+                            node.cR *= float(node.pD) * (1 - nodesListInsert.count(node.v) / listLength)
+                        if valueIndex < extraTopRelevance or listLength - extraTopRelevance <= valueIndex:
+                            node.cR *= 1.1 + min(valueIndex, listLength - valueIndex - 1) * 0.02
 
-                            node.cR *= 2
-                            if "top" in node.r:
-                                node.cR *= node.r["top"]
+                        node.cR *= 2
+                        if "top" in node.r:
+                            node.cR *= node.r["top"]
 
-                        elif aType == "average":
-                            nodesAverage = sum(nodesAll) / len(nodesAll)
+                    elif aType == "average":
+                        nodesAverage = sum(nodesAll) / len(nodesAll)
 
-                            node.rR = node.v / nodesAverage
-                            node.cR = node.rR
-                            node.cR -= 1
+                        node.rR = node.v / nodesAverage
+                        node.cR = node.rR
+                        node.cR -= 1
 
-                            if node.v > max(nodesAll) or node.v < min(nodesAll):
-                                node.cR *= 1.2
-                            if "average" in node.r:
-                                node.cR *= node.r["average"]
-                            nodesAll.append(node.v)
-                            nIndex = nodesAll.index(node.v)
+                        if node.v > max(nodesAll) or node.v < min(nodesAll):
+                            node.cR *= 1.2
+                        if "average" in node.r:
+                            node.cR *= node.r["average"]
+                        nodesAll.append(node.v)
+                        nIndex = nodesAll.index(node.v)
 
-                            node.pos = (nIndex, len(nodesAll))
-                        else:
-                            raise NotImplementedError(f"What type: {type}")
-                    case _:
-                        node.rR = 0
-                        node.cR = 0
-                        node.pos = "N/A"
+                        node.pos = (nIndex, len(nodesAll))
+                    else:
+                        raise NotImplementedError(f"What type: {type}")
+                else:
+                    node.rR = 0
+                    node.cR = 0
+                    node.pos = "N/A"
         analyseNode.againstNodes = False
         if nodeType == "players":
             if analyseNode.pList[1] in self.historicPlayers:
