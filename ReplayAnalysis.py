@@ -5,11 +5,6 @@ from collections import Counter
 from tkinter import ttk
 from os import remove
 
-import kivy
-kivy.require('2.1.0') # replace with your current kivy version !
-
-from kivy.app import App, Widget
-from kivy.uix.label import Label
 
 def RoundToX(num, base):
     return base * round(num / base)
@@ -997,17 +992,8 @@ class ReplayAnalysis:
         return analyseNode
 
 
-class LoadScreen(Widget):
-    pass
-
-
-class ReplayAnalysisApp(App):
-    def build(self):
-        return LoadScreen()
-
 if __name__ == '__main__':
     replayEngine = ReplayAnalysis(loadReplays = False)
     #for statNode in replayEngine.statNodes:
     #    print(statNode)
     #    input()
-    ReplayAnalysisApp().run()
