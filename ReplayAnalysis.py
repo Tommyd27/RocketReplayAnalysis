@@ -367,10 +367,6 @@ class AnalysisNode:
         s.againstValue = -1
         name = valueNode.n #Fetching name for use
 
-        
-
-
-
         for kArg in keywordArgs: #For argument in keyword Args
             if kArg in kwargs: #If in given values
                 s.__dict__[kArg] = kwargs[kArg] 
@@ -417,10 +413,6 @@ class AnalysisNode:
                         repeats = againstValues.count(valueNode.calculatedValue) - 1
                         weightEffect = repeats * s.punishDuplicates
                         s.alteredWeight -= weightEffect * sign(s.alteredWeight)
-                        
-
-
-
                     s.calculatedWeight = s.equalisedWeight * s.relevancy
                 else:
                     "magic here"
@@ -816,7 +808,6 @@ class ReplayAnalysis:
             elif valueNode.valueType == "Match":
                 allValues = [x.valueNodes[valueNode.n] for x in self.matches]
             self.statNodes.append(StatNode(valueNode, allValues))
-    def CompareReplaySelf(s, gamePlayers, gameTeams):
         playerStats = {}
         for statName in valueNodes["Player"]:
             allStats = [x.valueNodes[statName].calculatedValue for x in gamePlayers] #Get All Player Stats
@@ -888,7 +879,6 @@ class ReplayAnalysis:
                     else:
                         s.altConn.execute(f"""INSERT INTO {name} VALUES({i}, '{analysisValue}',  {output[1][analysisValue]}, '')""")
         s.altConn.commit()
-    def _AnalyseNode_(self, analyseNode, nodesList, aType = "top", extraTopRelevance = 5, onlyTags = False):
         """Deprecated"""
         
         
@@ -990,10 +980,11 @@ class ReplayAnalysis:
             pass
 
         return analyseNode
-
+    def ComparePlayerAverage(s, player, comparsionPlayers):
+        
 
 if __name__ == '__main__':
-    replayEngine = ReplayAnalysis(loadReplays = False)
+    replayEngine = ReplayAnalysis()
     #for statNode in replayEngine.statNodes:
     #    print(statNode)
     #    input()
