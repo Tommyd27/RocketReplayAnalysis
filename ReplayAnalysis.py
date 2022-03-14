@@ -177,6 +177,7 @@ class StatNode:
             self.CalculateStats(self.rawValues, "raw")        
     def CalculateStats(self, values, prefix = ""):
         values.sort()
+        self.values = values
         name = self.valueNode.n
         if self.valueNode.valueRangeType == 0:
             self.__dict__[f"{prefix}Mean"] = sum(values) / len(values)
@@ -389,7 +390,8 @@ class AnalysisNode:
             return
         
         if againstValues:
-            s.valueIndex = againstValues.index(valueNode.calculatedValue)
+            againstValues : StatNode
+            s.valueIndex = againstValues.values.index(valueNode.calculatedValue)
             if s.analysisType == 0:
                 if typeOfAnalysis == 0:
                     try:
@@ -980,8 +982,14 @@ class ReplayAnalysis:
             pass
 
         return analyseNode
-    def ComparePlayerAverage(s, player, comparsionPlayers):
-        
+    def ComparePlayerAverage(s, player : Player, comparsionPlayers):
+        playerValueNodes = player.valueNodes
+        for valueNode in playerValueNodes:
+            nodeName = valueNode.name
+            againstValueNodes = [x.valueNodes[nodeName] for x in comparsionPlayers]
+            againstStatNode = StatNode(valueNode, againstValueNodes)
+
+
 
 if __name__ == '__main__':
     replayEngine = ReplayAnalysis()
