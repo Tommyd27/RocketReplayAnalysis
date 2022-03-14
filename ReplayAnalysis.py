@@ -175,7 +175,7 @@ class StatNode:
         if valueNode.p:
             self.rawValues = [x.rawValue for x in self.values]
             self.CalculateStats(self.rawValues, "raw")        
-    def CalculateStats(self, values, prefix = ""):
+    def CalculateStats(self, values, prefix = "calculated"):
         values.sort()
         self.values = values
         name = self.valueNode.n
@@ -212,7 +212,7 @@ class StatNode:
             self.__dict__[f"{prefix}Mode"] = max(counterValues, key = lambda x : counterValues[x])
             self.__dict__[f"{prefix}Mean"] = self.__dict__[f"{prefix}Mode"]
             self.__dict__[f"{prefix}ValuesCounter"] = counterValues
-    def OutputValuesStr(s, prefix = ""):
+    def OutputValuesStr(s, prefix = "calculated"):
         output = "\n"
         
         if s.valueNode.valueRangeType == 0:
@@ -361,7 +361,7 @@ for nodeType in valueNodes:#Match, Player
 class AnalysisNode:
     valuesForOutput = ["rawWeight", "alteredWeight", "equalisedWeight", "calculatedWeight"]
     valueValuesForOutput = ["rawValue", "percentageOf", "calculationValues", "calculatedValue"]
-    def __init__(s, valueNode : ValueNode, againstValues = None, typeOfAnalysis = 0, **kwargs) -> None:
+    def __init__(s, valueNode : ValueNode, againstValues = None, toAnalyse = "calculated", typeOfAnalysis = 0, **kwargs) -> None:
         #Account for Duplicates, Punish Duplicates, Relevancy, 
         keywordArgs = ["analysisType", "accountForDuplicates", "punishDuplicates", "relevancy", "percentageAccountForValue"] #Analysis Node Arguments
         s.valueNode = valueNode #Setting Value Node 
