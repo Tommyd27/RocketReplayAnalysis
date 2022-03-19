@@ -361,13 +361,9 @@ for nodeType in valueNodes:#Match, Player
 class AnalysisNode:
     valuesForOutput = ["rawWeight", "alteredWeight", "equalisedWeight", "calculatedWeight"]
     valueValuesForOutput = ["rawValue", "percentageOf", "calculationValues", "calculatedValue"]
-    def __init__(s, valueNode : ValueNode, againstValues = None, toAnalyse = "calculated", typeOfAnalysis = 0, **kwargs) -> None:
-        #Account for Duplicates, Punish Duplicates, Relevancy, 
+    def InitialiseArguments(s, kwargs):
         keywordArgs = ["analysisType", "accountForDuplicates", "punishDuplicates", "relevancy", "percentageAccountForValue"] #Analysis Node Arguments
-        s.valueNode = valueNode #Setting Value Node 
-        s.againstValue = -1
-        name = valueNode.n #Fetching name for use
-
+        name = statNodes.valueNode.n
         for kArg in keywordArgs: #For argument in keyword Args
             if kArg in kwargs: #If in given values
                 s.__dict__[kArg] = kwargs[kArg] 
@@ -385,10 +381,15 @@ class AnalysisNode:
                 s.percentageAccountForValue = percentageAccountValues[name]
             else:
                 s.percentageAccountForValue = percentageAccountValues["default"]
-        if valueNode.calculatedValue == -1:
-            s.rawWeight, s.alteredWeight, s.equalisedWeight, s.calculatedWeight = -1, -1, -1, -1
-            return
+    def __init__(s, valueNode : ValueNode, againstValues = None, toAnalyse = "calculated", typeOfAnalysis = 0, **kwargs) -> None:
+        #Account for Duplicates, Punish Duplicates, Relevancy, 
         
+        s.valueNode = valueNode #Setting Value Node 
+        name = valueNode.n #Fetching name for use
+        s.InitialiseArguments(kwargs)
+        s.value = valueNode.__dict__[f"{toAnalyse}Value"]
+        if s.value == -1:
+            raise ValueError("Invalid Value")
         if againstValues:
             againstValues : StatNode
             s.valueIndex = againstValues.values.index(valueNode.calculatedValue)
