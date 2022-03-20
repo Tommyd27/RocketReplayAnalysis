@@ -91,7 +91,7 @@ percentageAccountValues = {"default" : [0.7, 0.2]}
 
 
 tagsDictionary = {}
-
+ 
 class ValueNode:
     def __init__(self, name, percentage = False, calculation = False, teamStat = True, default = -1, valueType = "Player", valueRangeType = 0, tag = None) -> None:
         """Name: Name of Node
