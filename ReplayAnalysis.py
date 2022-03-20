@@ -163,77 +163,70 @@ class ValueNode:
         node.calculatedValue = cachedValue
         return node
 class StatNode:
-    def __init__(self, valueNode : ValueNode, values) -> None:
+    def __init__(self, valueNode : ValueNode, values : list) -> None:
+        """ValueNode : Example ValueNode of Value
+           Values : List of Raw Values (not Value Nodes)"""
         self.name = valueNode.n
         self.valueNode = valueNode
-        self.values = [x for x in values if x.calculatedValue != -1]
+        self.values = [x for x in values if x != -1]
         self.numValues = len(self.values)
-        self.calculatedValues = [x.calculatedValue for x in self.values]
 
-        self.CalculateStats(self.calculatedValues)
-
-        if valueNode.p:
-            self.rawValues = [x.rawValue for x in self.values]
-            self.CalculateStats(self.rawValues, "raw")        
-    def CalculateStats(self, values, prefix = "calculated"):
-        values.sort()
-        self.values = values
-        name = self.valueNode.n
+        self.CalculateStats()    
+    def CalculateStats(self):
+        self.values.sort()
         if self.valueNode.valueRangeType == 0:
-            self.__dict__[f"{prefix}Mean"] = sum(values) / len(values)
-            self.__dict__[f"{prefix}Quartiles"] = [CalculateMedian(values, x, False) for x in (0.25, 0.5, 0.75)]
-            self.__dict__[f"{prefix}Mode"] = max(values, key = values.count)
-            self.__dict__[f"{prefix}ValuesCounter"] = Counter(values)
-            self.__dict__[f"{prefix}StandardDeviation"] = CalculateStandardDeviation(values, self.__dict__[f"{prefix}Mean"])
+            self.mean = sum(self.values) / len(self.values)
+            self.quartiles = [CalculateMedian(self.values, x, False) for x in (0.25, 0.5, 0.75)]
+            self.mode = max(self.values, key = self.values.count)
+            self.valuesCounter = Counter(self.values)
+            self.standardDeviation = CalculateStandardDeviation(self.values, self.mean)
             try:
-                groupValue = statNodes[name]["groupValue"]
+                groupValue = statNodes[self.name]["groupValue"]
             except KeyError:
-                if self.__dict__[f"{prefix}Quartiles"][1] > 10:
-                    groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]))
-                elif self.__dict__[f"{prefix}Quartiles"][1] > 1:
+                if self.quartiles[1] > 10:
+                    groupValue = round(0.1 * (self.quartiles[2] - self.quartiles[0]))
+                elif self.quartiles[1] > 1:
                     #groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]), 2)
-                    groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]), 1)
+                    groupValue = round(0.1 * (self.quartiles[2] - self.quartiles[0]), 1)
                 else:
                     groupValue = 0.01
                 if groupValue == 0:
-                    print(name)
-                    print(values)
+                    print(self.name)
+                    print(self.values)
                     print(self.rawQuartiles)
-                    print(self.__dict__[f"{prefix}Quartiles"])
-                    print(prefix)
-                    print(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]))
+                    print(self.quartiles)
+                    print(0.1 * (self.quartiles[2] - self.quartiles[0]))
                     input()  
-            self.__dict__[f"{prefix}GroupValue"] = groupValue
-            self.__dict__[f"{prefix}GroupedValues"] = [RoundToX(x, groupValue) for x in values]
-            self.__dict__[f"{prefix}GroupedMode"] = max(self.__dict__[f"{prefix}GroupedValues"], key = self.__dict__[f"{prefix}GroupedValues"].count)
-            self.__dict__[f"{prefix}GroupedValuesCounter"] = Counter(self.__dict__[f"{prefix}GroupedValues"])
+            self.groupValue = groupValue
+            self.groupedValues = [RoundToX(x, groupValue) for x in self.values]
+            self.groupedMode = max(self.groupedValues, key = self.groupedValues.count)
+            self.groupedValuesCounter = Counter(self.groupedValues)
         else:
-            counterValues = Counter(values)
-            self.__dict__[f"{prefix}Mode"] = max(counterValues, key = lambda x : counterValues[x])
-            self.__dict__[f"{prefix}Mean"] = self.__dict__[f"{prefix}Mode"]
-            self.__dict__[f"{prefix}ValuesCounter"] = counterValues
-    def OutputValuesStr(s, prefix = "calculated"):
+            counterValues = Counter(self.values)
+            self.mode = max(counterValues, key = lambda x : counterValues[x])
+            self.mean = self.mode
+            self.valuesCounter = counterValues
+    def OutputValuesStr(s):
         output = "\n"
         
         if s.valueNode.valueRangeType == 0:
-            output += f"\nMean : {round(s.__dict__[f'{prefix}Mean'], 2)}"
-            output += f"\nMode : {round(s.__dict__[f'{prefix}Mode'], 2)}"
-            output += f"\nQuartiles: {[round(x, 2) for x in s.__dict__[f'{prefix}Quartiles']]}"
-            output += f"\nStandard Deviation: {round(s.__dict__[f'{prefix}StandardDeviation'], 2)}"
-            output += f"\nGrouped Mode: {round(s.__dict__[f'{prefix}GroupedMode'], 2)}"
-            output += f"\nGroup Value: {round(s.__dict__[f'{prefix}GroupValue'], 2)}"
+            output += f"\nMean : {round(s.mean, 2)}"
+            output += f"\nMode : {round(s.mode, 2)}"
+            output += f"\nQuartiles: {[round(x, 2) for x in s.quartiles]}"
+            output += f"\nStandard Deviation: {round(s.standardDeviation, 2)}"
+            output += f"\nGrouped Mode: {round(s.groupedMode, 2)}"
+            output += f"\nGroup Value: {round(s.groupValue, 2)}"
         else:
-            output += f"\nMean : {s.__dict__[f'{prefix}Mean']}"
-            output += f"\nMode : {s.__dict__[f'{prefix}Mode']}"
+            output += f"\nMean : {s.mean}"
+            output += f"\nMode : {s.mode}"
         return output
     def __repr__(s) -> str:
         output = f"{s.name.title()}:"
         output += f"\nAnalysis Type : {s.valueNode.valueRangeType}"
         output += s.OutputValuesStr()
-        if s.valueNode.p:
-            output += s.OutputValuesStr("raw")
         return output
-""""""""""""""""""""""""""""""""""""""""""""""""
+                
+        
 valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"), 
                     ValueNode('neutralPossessionTime', percentage = "durationCalculated", valueType = "Match"),
                     ValueNode('bTimeGround', percentage = "durationCalculated", valueType = "Match"),
@@ -381,7 +374,7 @@ class AnalysisNode:
                 s.percentageAccountForValue = percentageAccountValues[name]
             else:
                 s.percentageAccountForValue = percentageAccountValues["default"]
-    def __init__(s, valueNode : ValueNode, againstValues = None, toAnalyse = "calculated", typeOfAnalysis = 0, **kwargs) -> None:
+    def __init__(s, valueNode : ValueNode, againstValues = None, toAnalyse = "calculated", **kwargs) -> None:
         #Account for Duplicates, Punish Duplicates, Relevancy, 
         
         s.valueNode = valueNode #Setting Value Node 
@@ -392,33 +385,33 @@ class AnalysisNode:
             raise ValueError("Invalid Value")
         if againstValues:
             againstValues : StatNode
-            s.valueIndex = againstValues.values.index(valueNode.calculatedValue)
+            againstValues.values.append(s.value)
+            s.valueIndex = againstValues.values.index(s.value)
             if s.analysisType == 0:
-                if typeOfAnalysis == 0:
-                    try:
-                        average = sum(againstValues) / len(againstValues)
-                    except TypeError as e:
-                        print(againstValues)
-                        raise e
-                    s.againstValue = average
-                    s.rawWeight = valueNode.calculatedValue / average
+                try:
+                    average = sum(againstValues) / len(againstValues)
+                except TypeError as e:
+                    print(againstValues)
+                    raise e
+                s.againstValue = average
+                s.rawWeight = valueNode.calculatedValue / average
 
-                    if s.percentageAccountForValue:
-                        s.rawWeight *= s.percentageAccountForValue[0]
-                        
-                        weightEffect = valueNode.calculatedValue * s.percentageAccountForValue[1]
-                        
-                        s.alteredWeight += weightEffect
+                if s.percentageAccountForValue:
+                    s.rawWeight *= s.percentageAccountForValue[0]
+                    
+                    weightEffect = valueNode.calculatedValue * s.percentageAccountForValue[1]
+                    
+                    s.alteredWeight += weightEffect
 
-                    s.equalisedWeight = s.rawWeight - 1
-                    s.alteredWeight = s.equalisedWeight
-                    if s.punishDuplicates:
-                        repeats = againstValues.count(valueNode.calculatedValue) - 1
-                        weightEffect = repeats * s.punishDuplicates
-                        s.alteredWeight -= weightEffect * sign(s.alteredWeight)
-                    s.calculatedWeight = s.equalisedWeight * s.relevancy
-                else:
-                    "magic here"
+                s.equalisedWeight = s.rawWeight - 1
+                s.alteredWeight = s.equalisedWeight
+                if s.punishDuplicates:
+                    repeats = againstValues.count(valueNode.calculatedValue) - 1
+                    weightEffect = repeats * s.punishDuplicates
+                    s.alteredWeight -= weightEffect * sign(s.alteredWeight)
+                s.calculatedWeight = s.equalisedWeight * s.relevancy
+            else:
+                "magic here"
             if s.analysisType in [1, 2]:
                 relativeAppearances = againstValues.count(valueNode.calculatedValue) / len(againstValues)
                 s.rawWeight = (1 / pow(relativeAppearances, 0.5))
@@ -811,35 +804,6 @@ class ReplayAnalysis:
             elif valueNode.valueType == "Match":
                 allValues = [x.valueNodes[valueNode.n] for x in self.matches]
             self.statNodes.append(StatNode(valueNode, allValues))
-        playerStats = {}
-        for statName in valueNodes["Player"]:
-            allStats = [x.valueNodes[statName].calculatedValue for x in gamePlayers] #Get All Player Stats
-            allStats = [x for x in allStats if x != -1] #Remove Invalid Values
-            if len(allStats) == 0:
-                continue 
-            for player in gamePlayers:
-                if player.pList[0] not in playerStats:
-                    playerStats[player.pList[0]] = {}
-                playerStats[player.pList[0]][statName] = AnalysisNode(player.valueNodes[statName], allStats)
-            if "average" not in playerStats:
-                playerStats["average"] = {}
-            try:
-                playerStats["average"][statName] = sum(allStats) / len(allStats)
-            except TypeError:
-                playerStats["average"][statName] = max(allStats, key = allStats.count)
-
-        teamStats = {"orange" : {}, "blue" : {}, "average" : {}}
-        for statName in gameTeams[0].valueNodes:
-            allStats = [x.valueNodes[statName].calculatedValue for x in gameTeams]
-            allStats = [x for x in allStats if x != -1]
-            if len(allStats) == 0:
-                continue
-            for team in gameTeams:
-                teamStats[team.colour][statName] = AnalysisNode(team.valueNodes[statName], allStats)
-            teamStats["average"][statName] = sum(allStats) / len(allStats)
-        playerNames = [x.name for x in gamePlayers] + ["average"]
-        teamNames = [team.colour for team in gameTeams] + ["average"]
-        s.OutputAnalysis([(f"{playerNames[i]}_player", x) for i, x in enumerate(playerStats.values())] + [(f"{teamNames[i]}_team", x) for i, x in enumerate(teamStats.values())])
     def OutputAnalysis(s, args):
         if not s.altConn:
             s.CreateAltConnection(s.altdbFile)
