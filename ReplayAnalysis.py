@@ -1,4 +1,5 @@
 
+from optparse import Values
 import sqlite3
 
 from string import ascii_letters
@@ -206,6 +207,7 @@ class StatNode:
             self.mode = max(counterValues, key = lambda x : counterValues[x])
             self.mean = self.mode
             self.valuesCounter = counterValues
+            self.groupedValuesCounter = counterValues
     def OutputValuesStr(s):
         output = "\n"
         
@@ -352,8 +354,6 @@ for nodeType in valueNodes:#Match, Player
     valueNodes[nodeType] = nodeDict
 
 class AnalysisNode:
-    valuesForOutput = ["rawWeight", "alteredWeight", "equalisedWeight", "calculatedWeight"]
-    valueValuesForOutput = ["rawValue", "percentageOf", "calculationValues", "calculatedValue"]
     def InitialiseArguments(s, kwargs):
         keywordArgs = ["analysisType", "accountForDuplicates", "punishDuplicates", "relevancy", "percentageAccountForValue"] #Analysis Node Arguments
         name = statNodes.valueNode.n
@@ -378,7 +378,7 @@ class AnalysisNode:
         #Account for Duplicates, Punish Duplicates, Relevancy, 
         
         s.valueNode = valueNode #Setting Value Node 
-        name = valueNode.n #Fetching name for use
+        s.againstValues = againstValues 
         s.InitialiseArguments(kwargs)
         s.value = valueNode.__dict__[f"{toAnalyse}Value"]
         if s.value == -1:
@@ -386,41 +386,20 @@ class AnalysisNode:
         if againstValues:
             againstValues : StatNode
             againstValues.values.append(s.value)
-            s.valueIndex = againstValues.values.index(s.value)
+            s.valueIndex = (againstValues.values.index(s.value), len(againstValues.values))
             if s.analysisType == 0:
-                try:
-                    average = sum(againstValues) / len(againstValues)
-                except TypeError as e:
-                    print(againstValues)
-                    raise e
-                s.againstValue = average
-                s.rawWeight = valueNode.calculatedValue / average
-
-                if s.percentageAccountForValue:
-                    s.rawWeight *= s.percentageAccountForValue[0]
-                    
-                    weightEffect = valueNode.calculatedValue * s.percentageAccountForValue[1]
-                    
-                    s.alteredWeight += weightEffect
-
-                s.equalisedWeight = s.rawWeight - 1
-                s.alteredWeight = s.equalisedWeight
-                if s.punishDuplicates:
-                    repeats = againstValues.count(valueNode.calculatedValue) - 1
-                    weightEffect = repeats * s.punishDuplicates
-                    s.alteredWeight -= weightEffect * sign(s.alteredWeight)
-                s.calculatedWeight = s.equalisedWeight * s.relevancy
-            else:
-                "magic here"
-            if s.analysisType in [1, 2]:
-                relativeAppearances = againstValues.count(valueNode.calculatedValue) / len(againstValues)
-                s.rawWeight = (1 / pow(relativeAppearances, 0.5))
-
-                s.alteredWeight = s.rawWeight
-                s.equalisedWeight = s.rawWeight - 1
-                s.calculatedWeight = s.equalisedWeight * s.relevancy
+                s.againstAverage = s.value / againstValues.mean
+                s.againstMedian = s.value/ againstValues.median
+                s.sDAway = (s.value - againstValues.mean) / s.standardDeviation
+            s.valueRarity = (againstValues.groupedValuesCounter[RoundToX(s.value, againstValues.groupValue)], sum(againstValues.groupedValuesCounter.values))
     def __repr__(s) -> str:
-        output = f"{s.valueNode}, Raw Weight: {s.rawWeight}, Calculated Weight: {s.calculatedWeight}"
+        output = f"""{s.valueNode.n}
+Index: {s.valueIndex[0]} / {s.valueIndex[1]}
+Value Rarity: {s.valueRarity[0]} / {s.valueRarity[1]}"""
+        if s.analysisType == 0:
+            output += f"""Against Average: {s.againstAverage}
+Against Median: {s.againstMedian}
+Standard Deviations Away: {s.sDAway}"""
         return output
 class HistoricalNode:
     def __init__(s, name, relevancy, value, againstValue, index, analysisType) -> None:
