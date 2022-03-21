@@ -80,15 +80,15 @@ retrievalNodes = {"Match" : ["matchID", "gameID", "map", "matchType",
                 "totalAerials", "totalClears", "isKeyboard", "tBallCam", "qCarries", "qFlicks", "totalCarryT", "totalCarryD", "aCarryT", "totalKickoffs", 
                 "numGoBoost", "numnGoFollow", "numGoBall", "numFirstTouch", "aBoostUsed", "fiftyWins", "fiftyLosses", "fiftyDraws", "isBot", "partyLeaderID", 
                 "ballchasingStartTime", "ballchasingEndTime", "ballchasingBoostTime", "ballchasingStatTime", "calculatedFirstFrame", "calculatedTimeInGame", "matchID"]}
-analysisNodeDictionary = {"default" : {"analysisType" : 0, "accountForDuplicates" : False, "punishDuplicates" : False, "relevancy" : 1, "percentageAccountForValue" : False},
+analysisNodeDictionary = {"default" : {"analysisType" : 0, "relevancy" : 1},
                           "qOverfillStolen" : {"punishDuplicates" : True},
                           "carName" : {"analysisType" : 1},
                           "scoredFirst" : {"analysisType" : 2},
                           
                          }
-punishDuplicatesAvg = {"default" : 0.2}
+#punishDuplicatesAvg = {"default" : 0.2}
 statNodes = {}
-percentageAccountValues = {"default" : [0.7, 0.2]}
+#percentageAccountValues = {"default" : [0.7, 0.2]}
 
 
 tagsDictionary = {}
@@ -128,6 +128,17 @@ class ValueNode:
             output += f", Raw Value: {s.rawValue}, Percentage Of: {s.percentageOf}, Calculated Value: {s.calculatedValue}"
         return output
     def GiveValue(s, rawValue, percentageOf = None, calculationValues = None, individualPlayers = None, teamCalculation = False):
+        """
+        Raw Value: Value of Node
+        Percentage Of: What is is percentage of/ will be divided by
+        Calculation Values: Stores the values used to calculate the raw values (if needed)
+        Individual Players: Stores the individual players behind the sum stat in Team case
+        Team Calculation: Lets node know to ignore calculation and other things due to it being teamStat and sum already given
+        
+        Output:
+        
+        Returns new node"""
+        
         node = ValueNode(s.n, s.p, s.c, s.tS, s.default, s.valueType, s.valueRangeType, s.tag) 
         node.rawValue = rawValue
         node.percentageOf = percentageOf
@@ -153,12 +164,12 @@ class ValueNode:
                         calculationString = calculationString.replace("@", str(cValue), 1)
                     cachedValue = eval(calculationString)
             node.rawValue = cachedValue
-        if node.p and not teamCalculation:
-            if percentageOf != -1:
-                if percentageOf == 0:
+        if node.p and not teamCalculation and calculationValues:
+            if -1 not in percentageOf:
+                if sum(percentageOf) == 0:
                     cachedValue /= 1
                 else:
-                    cachedValue /= percentageOf
+                    cachedValue /= sum(percentageOf)
             else:
                 cachedValue = -1
         node.calculatedValue = cachedValue
@@ -355,7 +366,7 @@ for nodeType in valueNodes:#Match, Player
 
 class AnalysisNode:
     def InitialiseArguments(s, kwargs):
-        keywordArgs = ["analysisType", "accountForDuplicates", "punishDuplicates", "relevancy", "percentageAccountForValue"] #Analysis Node Arguments
+        keywordArgs = ["analysisType", "relevancy"] #Analysis Node Arguments
         name = statNodes.valueNode.n
         for kArg in keywordArgs: #For argument in keyword Args
             if kArg in kwargs: #If in given values
@@ -457,60 +468,42 @@ class Player:
                 calcVariables = None
                 rawValue = playerList[node.i]
             if node.p:
-                if node.p in retrievalNodes["Player"]:
-                    divValue = playerList[retrievalNodes["Player"].index(node.p)]
-                else:
-                    if node.p == "teamGoals":
-                        teamGoalsIndex = 10 if playerList[8] == "blue" else 9
-                        divValue = matchList[teamGoalsIndex]
-                    elif node.p == "totalFifties":
-                        try:
-                            divValue = playerList[retrievalNodes["Player"].index("fiftyWins")] + playerList[retrievalNodes["Player"].index("fiftyLosses")] + playerList[retrievalNodes["Player"].index("fiftyDraws")]
-                        except TypeError:
-                            divValue = -1
+                if not isinstance(node.p, list):
+                    node.p = [node.p]
+                divValues = []
+                for divValueOf in node.p:
+                    if node.p in retrievalNodes["Player"]:
+                        divValue = playerList[retrievalNodes["Player"].index(node.p)]
                     else:
-                        print(node.n)
-                        raise NotImplementedError("Da Fuq")
-                if divValue in [None, "NaN"]:
-                    divValue = -1
+                        if node.p == "teamGoals":
+                            teamGoalsIndex = 10 if playerList[8] == "blue" else 9
+                            divValue = matchList[teamGoalsIndex]
+                        elif node.p == "totalFifties":
+                            try:
+                                divValue = playerList[retrievalNodes["Player"].index("fiftyWins")] + playerList[retrievalNodes["Player"].index("fiftyLosses")] + playerList[retrievalNodes["Player"].index("fiftyDraws")]
+                            except TypeError:
+                                divValue = -1
+                        else:
+                            print(node.n)
+                            raise NotImplementedError("Da Fuq")
+                    if divValue in [None, "NaN"]:
+                        divValue = -1
+                    divValues.append(divValue)
             else:
-                divValue = None       
-            self.valueNodes[node.n] = node.GiveValue(rawValue, divValue, calcVariables)
+                divValues = None       
+            self.valueNodes[node.n] = node.GiveValue(rawValue, None, calcVariables)
+            self.valueNodes[f"{node.n}%{node.p}"] = node.giveValue(rawValue, divValues, calcVariables)
 class PlayerHistoric(Player):
     countForHistoric = 3
     def __init__(s, players, intensiveStats = True):
         s.players = players
-        s.averageValues = {}
+        s.statNodes = {}
         s.numAppearances = len(players)
         s.iS = intensiveStats
         s.id = players[0].pList[1]
         for stat in valueNodes["Player"].values():
-            if stat.valueRangeType == 0:
-                aList = [x.valueNodes[stat.n].calculatedValue for x in players if stat.n in x.valueNodes and x.valueNodes[stat.n].calculatedValue != -1]
-                try:
-                    aSum = sum(aList)
-                except TypeError as e:
-                    print(aList)
-                    raise e
-                try:
-                    aAvg = aSum / len(aList)
-                except ZeroDivisionError:
-                    aAvg = -1
-
-                s.averageValues[stat.n] = [aAvg, aList]
-            else:
-                allValues = [p.valueNodes[stat.n].calculatedValue for p in players if stat.n in p.valueNodes]
-                s.averageValues[stat.n] = Counter(allValues)
-        ["matchID", "gameID", "map", "matchType", 
-                "teamSize", "durationCalculated", "durationBallchasing", 
-                "overtime", "nFrames", "orangeScore", "blueScore", 
-                "goalSequence", "neutralPossessionTime", "bTimeGround", "bTimeLowAir", "bTimeHighAir", "bTimeBlueHalf", 
-                "bTimeOrangeHalf", "bTimeBlueThird", "bTimeNeutralThird", "bTimeOrangeThird", "bTimeNearWall", "bTimeInCorner", 
-                "bTimeOnWall", "bAverageSpeed", "bType", "gameMutatorIndex", "tBlueClumped", "tOrangeClumped", "tBlueIsolated", 
-                "tOrangeIsolated", "tBluePossession", "tOrangePossession", "replayTagOne", "replayTagTwo", "replayTagThree", 
-                "replayTagFour", "replayTagFive", "startPlayerIndex"]
-        ["playerID", "pBallchasingID", "pCalculatedId", "pName", "pPlatform", "pTier", 
-                "carName", "titleID", "teamColour", "bUsage", "bPerMinute", "bConsumptionPerMinute", "aAmount"]            
+            statList = [x.valueNodes[stat.n].calculatedValue for x in players]
+            s.statNodes[stat.n] = StatNode(stat, statList)
         if intensiveStats:
             s.goalSequencesDictionary = {}
             for playerMatch in players:
@@ -584,7 +577,7 @@ class Team:
         self.mL = matchList
         self.colour = players[0].pList[8]
         playersValues = [list(x.valueNodes.values()) for x in players]
-        for i, node in enumerate(valueNodes["Player"].values()):
+        for i, node in enumerate(players[0].valueNodes.values()):
             node : ValueNode
             if not node.tS:
                 continue
@@ -926,12 +919,18 @@ class ReplayAnalysis:
             pass
 
         return analyseNode
-    def ComparePlayerAverage(s, player : Player, comparsionPlayers):
-        playerValueNodes = player.valueNodes
-        for valueNode in playerValueNodes:
+    def PerformAnalysis(s, toAnalyse, analyseAgainst, rankBy = False):
+        objectValueNodes = toAnalyse.valueNodes
+        analysisNodes = []
+        for valueNode in objectValueNodes:
             nodeName = valueNode.name
-            againstValueNodes = [x.valueNodes[nodeName] for x in comparsionPlayers]
+            againstValueNodes = [x.valueNodes[nodeName].calculatedValue for x in analyseAgainst]
             againstStatNode = StatNode(valueNode, againstValueNodes)
+            analysisNode = AnalysisNode(valueNode, againstStatNode)
+            analysisNodes.append(analysisNode)
+        if rankBy:
+            analysisNodes.sort(key = lambda x : x.__dict__[rankBy] * x.relevancy)
+        return analysisNodes
 
 
 
