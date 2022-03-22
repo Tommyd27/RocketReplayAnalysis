@@ -1,5 +1,5 @@
 
-from optparse import Values
+import
 import sqlite3
 
 from string import ascii_letters
@@ -961,7 +961,7 @@ class ReplayAnalysis:
             pass
 
         return analyseNode
-    def OneAgainstManyAnalysis(s, toAnalyse, analyseAgainst, rankBy = False):
+    def OneAgainstManyAnalysis(s, toAnalyse, analyseAgainst):#, rankBy = False):
         objectValueNodes = toAnalyse.valueNodes
         analysisNodes = []
         for valueNode in objectValueNodes:
@@ -970,13 +970,15 @@ class ReplayAnalysis:
             againstStatNode = StatNode(valueNode, againstValueNodes)
             analysisNode = AnalysisNode(valueNode, againstStatNode)
             analysisNodes.append(analysisNode)
-        if rankBy:
-            analysisNodes.sort(key = lambda x : x.__dict__[rankBy] * x.relevancy)
+        #if rankBy:
+        #    analysisNodes.sort(key = lambda x : x.__dict__[rankBy] * x.relevancy)
         return analysisNodes
     def HeadToHeadAnalysis(s, toAnalyse, analyseAgainst, rankBy = False):
-        
+        pass
 
-
+class ExcelConnection:
+    def __init__(self) -> None:
+        self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
 
 if __name__ == '__main__':
     replayEngine = ReplayAnalysis()
