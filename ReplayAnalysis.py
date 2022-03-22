@@ -238,7 +238,49 @@ class StatNode:
         output += f"\nAnalysis Type : {s.valueNode.valueRangeType}"
         output += s.OutputValuesStr()
         return output
-                
+    def CompareAgainstStatNode(s, otherStatNode):
+        otherStatNode : StatNode
+        if s.valueNode.valueRangeType == 0:
+            valuesToCompare = ["mean", "quartiles", "standardDeviation", "groupedMode"]
+            valuesCompared = {}
+            for value in valuesToCompare:
+                ourValue = s.__dict__[value]
+                theirValue = otherStatNode.__dict__[value]
+                if theirValue == 0:
+                    theirValue = ourValue / -1
+                    if theirValue == 0:
+                        theirValue = -1
+                valuesCompared[value] = [ourValue / theirValue, ourValue - theirValue]
+        else:
+            relativeCounts = []
+            differentialCount = {}
+            relativeDifferenceCount = {}
+            for counter in [s.groupedValuesCounter, otherStatNode.groupedValuesCounter]:
+                length = sum([x for x in counter.values()])
+                relativeCount = {}
+                for key in counter:
+                    relativeCount[key] = counter[key] / length
+                relativeCounts.append(relativeCount)
+            while len(relativeCounts[0]) > 0:
+                key = relativeCounts[0][relativeCounts[0].keys()[0]]
+                ourRelativeValue = relativeCounts[0].pop(key)
+                try:
+                    theirRelativeValue = relativeCounts[1].pop(key)
+                    relativeDifferenceCount[key] = ourRelativeValue / theirRelativeValue
+                except KeyError:
+                    theirRelativeValue = 0
+                    relativeDifferenceCount[key] = -1
+                differentialCount[key] = ourRelativeValue - theirRelativeValue
+            while len(relativeCounts[1]) > 0:
+                key = relativeCounts[1][relativeCounts[1].keys()[0]]
+                theirRelativeValue = relativeCounts[1].pop(key)
+                relativeDifferenceCount[key] = 0
+                differentialCount[key] = -theirRelativeValue
+            valuesCompared = {}
+            for key in relativeDifferenceCount:
+                valuesCompared[key] = [relativeDifferenceCount[key], differentialCount[key]]
+        return valuesCompared
+            
         
 valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"), 
                     ValueNode('neutralPossessionTime', percentage = "durationCalculated", valueType = "Match"),
