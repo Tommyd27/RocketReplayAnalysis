@@ -86,9 +86,9 @@ analysisNodeDictionary = {"default" : {"analysisType" : 0, "relevancy" : 1},
                           "scoredFirst" : {"analysisType" : 2},
                           
                          }
-#punishDuplicatesAvg = {"default" : 0.2}
+punishDuplicatesAvg = {"default" : 0.2}
 statNodes = {}
-#percentageAccountValues = {"default" : [0.7, 0.2]}
+percentageAccountValues = {"default" : [0.7, 0.2]}
 
 
 tagsDictionary = {}
@@ -919,7 +919,7 @@ class ReplayAnalysis:
             pass
 
         return analyseNode
-    def PerformAnalysis(s, toAnalyse, analyseAgainst, rankBy = False):
+    def OneAgainstManyAnalysis(s, toAnalyse, analyseAgainst, rankBy = False):
         objectValueNodes = toAnalyse.valueNodes
         analysisNodes = []
         for valueNode in objectValueNodes:
@@ -931,6 +931,8 @@ class ReplayAnalysis:
         if rankBy:
             analysisNodes.sort(key = lambda x : x.__dict__[rankBy] * x.relevancy)
         return analysisNodes
+    def HeadToHeadAnalysis(s, toAnalyse, analyseAgainst, rankBy = False):
+        
 
 
 
