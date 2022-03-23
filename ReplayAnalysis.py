@@ -979,7 +979,7 @@ class ReplayAnalysis:
 class ExcelConnection:
     def __init__(self) -> None:
         self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
-
+        self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
 if __name__ == '__main__':
     replayEngine = ReplayAnalysis()
     #for statNode in replayEngine.statNodes:
