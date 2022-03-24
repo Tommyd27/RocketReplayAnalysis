@@ -982,8 +982,6 @@ class ReplayAnalysis:
         statNColumns = ["mean", "quartiles", "mode", "standardDeviation", "groupedMode"]
         
         
-class ExcelConnection:
-    def __init__(self) -> None:
         
 if __name__ == '__main__':
     replayEngine = ReplayAnalysis()
