@@ -1,11 +1,10 @@
-
-import
 import sqlite3
 
-from string import ascii_letters
+from string import ascii_letters, ascii_uppercase
 from collections import Counter
 from os import remove
-
+from openpyxl import Workbook
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 def RoundToX(num, base):
     return base * round(num / base)
@@ -818,7 +817,7 @@ class ReplayAnalysis:
             elif valueNode.valueType == "Match":
                 allValues = [x.valueNodes[valueNode.n] for x in self.matches]
             self.statNodes.append(StatNode(valueNode, allValues))
-    def OutputAnalysis(s, args):
+    def OutputAnalysisSQL(s, args):
         if not s.altConn:
             s.CreateAltConnection(s.altdbFile)
         for output in args:
@@ -975,11 +974,17 @@ class ReplayAnalysis:
         return analysisNodes
     def HeadToHeadAnalysis(s, toAnalyse, analyseAgainst, rankBy = False):
         pass
-
+    def OutputAnalysisExcel(s, analysisNodes, analysedagainst, startPosition = (1, 1), sheet = 1):
+        filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        valueNColumns = ["name", "calculatedValue", "rawValue", "percentageOf"]
+        analysisNColumns = ["valueIndex", "valueLength", "againstAverage", "againstMedian", "sDAway", "valueRarity", "relevancy"]
+        statNColumns = ["mean", "quartiles", "mode", "standardDeviation", "groupedMode"]
+        
+        
 class ExcelConnection:
     def __init__(self) -> None:
-        self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
-        self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        
 if __name__ == '__main__':
     replayEngine = ReplayAnalysis()
     #for statNode in replayEngine.statNodes:
