@@ -3,6 +3,7 @@ import sqlite3
 from string import ascii_letters, ascii_uppercase
 from collections import Counter
 from os import remove
+from unicodedata import name
 import openpyxl as xl
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
@@ -13,11 +14,19 @@ def CalculateMedian(values, medianType = 0.5, sort = True):
     midValue = (lenValues + 1) * medianType
     if sort:
         values.sort()
-    if midValue % 1 == 0:
-        return values[int(midValue)]
-    else:
-        midValue = int(midValue)
-        return (values[midValue] + values[midValue + 1]) / 2
+    try:
+        if midValue % 1 == 0:
+            return values[int(midValue)]
+        else:
+            midValue = int(midValue)
+            return (values[midValue] + values[midValue + 1]) / 2
+    except IndexError as e:
+        if lenValues <= 2:
+            print("not enough values for median")
+            return -1
+        else:
+            return values[int(medianType * 4) - 1]
+        
 def CalculateStandardDeviation(values, mean = False):
     lenValues = len(values)
     if not mean:
@@ -164,7 +173,7 @@ class ValueNode:
                     cachedValue = eval(calculationString)
             node.rawValue = cachedValue
         if node.p and not teamCalculation and calculationValues:
-            if -1 not in percentageOf:
+            if percentageOf and -1 not in percentageOf:
                 if sum(percentageOf) == 0:
                     cachedValue /= 1
                 else:
@@ -181,8 +190,11 @@ class StatNode:
         self.valueNode = valueNode
         self.values = [x for x in values if x != -1]
         self.numValues = len(self.values)
-
-        self.CalculateStats()    
+        if self.numValues > 0:
+            self.CalculateStats()
+        else:
+            print("Zero Values for Stat")
+            self.mean, self.mode = -1, -1
     def CalculateStats(self):
         self.values.sort()
         if self.valueNode.valueRangeType == 0:
@@ -194,9 +206,9 @@ class StatNode:
             try:
                 groupValue = statNodes[self.name]["groupValue"]
             except KeyError:
-                if self.quartiles[1] > 10:
+                if self.quartiles[2] - self.quartiles[0] > 5:
                     groupValue = round(0.1 * (self.quartiles[2] - self.quartiles[0]))
-                elif self.quartiles[1] > 1:
+                elif self.quartiles[2] - self.quartiles[0] > 1:
                     #groupValue = round(0.1 * (self.__dict__[f"{prefix}Quartiles"][2] - self.__dict__[f"{prefix}Quartiles"][0]), 2)
                     groupValue = round(0.1 * (self.quartiles[2] - self.quartiles[0]), 1)
                 else:
@@ -204,7 +216,6 @@ class StatNode:
                 if groupValue == 0:
                     print(self.name)
                     print(self.values)
-                    print(self.rawQuartiles)
                     print(self.quartiles)
                     print(0.1 * (self.quartiles[2] - self.quartiles[0]))
                     input()  
@@ -502,7 +513,7 @@ class Player:
                             calcVariables = [-1]
                     else:
                         print(node.n)
-                        raise NotImplementedError("Da Fuq")
+                        raise NotImplementedError("Da Fuq 1")
                 else:
                     calcVariables = [x.calculatedValue for x in self.valueNodes.values() if x.n in node.c[1:]]
             else:
@@ -513,27 +524,28 @@ class Player:
                     node.p = [node.p]
                 divValues = []
                 for divValueOf in node.p:
-                    if node.p in retrievalNodes["Player"]:
-                        divValue = playerList[retrievalNodes["Player"].index(node.p)]
+                    if divValueOf in retrievalNodes["Player"]:
+                        divValue = playerList[retrievalNodes["Player"].index(divValueOf)]
                     else:
-                        if node.p == "teamGoals":
+                        if divValueOf == "teamGoals":
                             teamGoalsIndex = 10 if playerList[8] == "blue" else 9
                             divValue = matchList[teamGoalsIndex]
-                        elif node.p == "totalFifties":
+                        elif divValueOf == "totalFifties":
                             try:
                                 divValue = playerList[retrievalNodes["Player"].index("fiftyWins")] + playerList[retrievalNodes["Player"].index("fiftyLosses")] + playerList[retrievalNodes["Player"].index("fiftyDraws")]
                             except TypeError:
                                 divValue = -1
                         else:
                             print(node.n)
-                            raise NotImplementedError("Da Fuq")
+                            print(node.p)
+                            raise NotImplementedError("Da Fuq 2")
                     if divValue in [None, "NaN"]:
                         divValue = -1
                     divValues.append(divValue)
             else:
                 divValues = None       
             self.valueNodes[node.n] = node.GiveValue(rawValue, None, calcVariables)
-            self.valueNodes[f"{node.n}%{node.p}"] = node.giveValue(rawValue, divValues, calcVariables)
+            self.valueNodes[f"{node.n}%{node.p}"] = node.GiveValue(rawValue, divValues, calcVariables)
 class PlayerHistoric(Player):
     countForHistoric = 3
     def __init__(s, players, intensiveStats = True):
@@ -684,8 +696,8 @@ class Match:
 
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, args = None):
-        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
 
@@ -813,9 +825,9 @@ class ReplayAnalysis:
                 continue
             valueNode : ValueNode
             if valueNode.valueType == "Player":
-                allValues = [x.valueNodes[valueNode.n] for x in self.players]
+                allValues = [x.valueNodes[valueNode.n].calculatedValue for x in self.players]
             elif valueNode.valueType == "Match":
-                allValues = [x.valueNodes[valueNode.n] for x in self.matches]
+                allValues = [x.valueNodes[valueNode.n].calculatedValue for x in self.matches]
             self.statNodes.append(StatNode(valueNode, allValues))
     def OutputAnalysisSQL(s, args):
         if not s.altConn:
@@ -976,12 +988,12 @@ class ReplayAnalysis:
         pass
     def ConvertIndexToPosition(position):
         return f"{ascii_uppercase[position[0] - 1]}{position[1]}"
-    def OutputAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None):
+    def OutputAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None, override = True):
         filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
-        filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        #filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
         valueNColumns = ["name", "calculatedValue", "rawValue", "percentageOf"]
-        analysisNColumns = ["valueIndex", "valueLength", "againstAverage", "againstMedian", "sDAway", "valueRarity", "relevancy"]
-        statNColumns = ["mean", "quartiles", "mode", "standardDeviation", "groupedMode"]
+        analysisNColumns = [("valueIndex", 2), "againstAverage", "againstMedian", "sDAway", "valueRarity", "relevancy"]
+        statNColumns = ["mean", ("quartiles", 3), "mode", "standardDeviation", "groupedMode"]
         valueNData = [[y.valueNode.__dict__[x] for x in valueNColumns] for y in analysisNodes]
         analysisNData = [[y.__dict__[x] for x in analysisNColumns] for y in analysisNodes]
         statNData = [[y.__dict__[x] for x in statNColumns] for y in analysedAgainst]
@@ -994,8 +1006,23 @@ class ReplayAnalysis:
         else:
             xlSheet = xlWorkbook[sheet]
         additionalLength = 0
-        for nodeList in [valueNColumns, analysisNColumns, statNColumns]:
-            
+        for i, columnName in enumerate(valueNColumns + analysisNColumns + statNColumns):
+            if isinstance(columnName, str):
+                xlSheet[s.ConvertIndexToPosition((startPosition[0] + i + additionalLength, startPosition[1]))].value = columnName
+            else:
+                for _ in range(columnName[1]):
+                    xlSheet[s.ConvertIndexToPosition((startPosition[0] + i + additionalLength, startPosition[1]))].value = columnName[1] + str(_)
+                    additionalLength += 1
+        
+        for y, row in enumerate(combinedData):
+            additionalLength = 0
+            for x, dataPoint in enumerate(row):
+                if isinstance(x, (list, tuple)):
+                    for singlePoint in dataPoint:
+                        xlSheet[s.ConvertIndexToPosition((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = singlePoint
+                        additionalLength += 1
+                else:
+                    xlSheet[s.ConvertIndexToPosition((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = dataPoint
         overallLength = len(valueNColumns) + len(analysisNColumns) + len(statNColumns)
         endPosition = (startPosition[0] + overallLength, startPosition[1] + len(analysisNodes))
         table = Table(displayName = "Output Analysis", ref = f"{s.ConvertIndexToPosition(startPosition)}:{s.ConvertIndexToPosition(endPosition)}")
@@ -1007,6 +1034,7 @@ class ReplayAnalysis:
 
 if __name__ == '__main__':
     replayEngine = ReplayAnalysis()
-    #for statNode in replayEngine.statNodes:
-    #    print(statNode)
-    #    input()
+    match, players = replayEngine.GetReplay(123, False)
+    output = replayEngine.OneAgainstManyAnalysis(players[0], players[1:])
+    replayEngine.OutputAnalysisExcel(output)
+
