@@ -3,7 +3,7 @@ import sqlite3
 from string import ascii_letters, ascii_uppercase
 from collections import Counter
 from os import remove
-from openpyxl import Workbook
+import openpyxl as xl
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
 def RoundToX(num, base):
@@ -974,15 +974,37 @@ class ReplayAnalysis:
         return analysisNodes
     def HeadToHeadAnalysis(s, toAnalyse, analyseAgainst, rankBy = False):
         pass
-    def OutputAnalysisExcel(s, analysisNodes, analysedagainst, startPosition = (1, 1), sheet = 1):
+    def ConvertIndexToPosition(position):
+        return f"{ascii_uppercase[position[0] - 1]}{position[1]}"
+    def OutputAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None):
         filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
         filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
         valueNColumns = ["name", "calculatedValue", "rawValue", "percentageOf"]
         analysisNColumns = ["valueIndex", "valueLength", "againstAverage", "againstMedian", "sDAway", "valueRarity", "relevancy"]
         statNColumns = ["mean", "quartiles", "mode", "standardDeviation", "groupedMode"]
+        valueNData = [[y.valueNode.__dict__[x] for x in valueNColumns] for y in analysisNodes]
+        analysisNData = [[y.__dict__[x] for x in analysisNColumns] for y in analysisNodes]
+        statNData = [[y.__dict__[x] for x in statNColumns] for y in analysedAgainst]
+        combinedData = []
+        for i in range(len(valueNData)):
+            combinedData.append(valueNData[i] + analysisNData[i] + statNData[i])
+        xlWorkbook = xl.load_workbook(filePath)
+        if not sheet:
+            xlSheet = xlWorkbook.active
+        else:
+            xlSheet = xlWorkbook[sheet]
+        additionalLength = 0
+        for nodeList in [valueNColumns, analysisNColumns, statNColumns]:
+            
+        overallLength = len(valueNColumns) + len(analysisNColumns) + len(statNColumns)
+        endPosition = (startPosition[0] + overallLength, startPosition[1] + len(analysisNodes))
+        table = Table(displayName = "Output Analysis", ref = f"{s.ConvertIndexToPosition(startPosition)}:{s.ConvertIndexToPosition(endPosition)}")
+        style = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
+                       showLastColumn=False, showRowStripes=True, showColumnStripes=True)
+        table.tableStyleInfo = style
+        xlSheet.add_table(table)
         
-        
-        
+
 if __name__ == '__main__':
     replayEngine = ReplayAnalysis()
     #for statNode in replayEngine.statNodes:
