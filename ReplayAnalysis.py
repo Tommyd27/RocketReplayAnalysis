@@ -1,3 +1,4 @@
+from inspect import Attribute
 import sqlite3
 
 from string import ascii_letters, ascii_uppercase
@@ -92,6 +93,7 @@ analysisNodeDictionary = {"default" : {"analysisType" : 0, "relevancy" : 1},
                           "qOverfillStolen" : {"punishDuplicates" : True},
                           "carName" : {"analysisType" : 1},
                           "scoredFirst" : {"analysisType" : 2},
+                          "mvp" : {"analysisType" : 2},
                           
                          }
 punishDuplicatesAvg = {"default" : 0.2}
@@ -377,7 +379,7 @@ valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"),
                     ValueNode('assists'),
                     ValueNode('saves'),
                     ValueNode('shots'),
-                    ValueNode('mvp'),
+                    ValueNode('mvp', valueRangeType = 1, teamStat = False),
                     ValueNode('shootingP'),
                     ValueNode('totalHits'),
                     ValueNode('totalPasses'),
@@ -417,9 +419,8 @@ for nodeType in valueNodes:#Match, Player
     valueNodes[nodeType] = nodeDict
 
 class AnalysisNode:
-    def InitialiseArguments(s, kwargs):
+    def InitialiseArguments(s, name, kwargs):
         keywordArgs = ["analysisType", "relevancy"] #Analysis Node Arguments
-        name = statNodes.valueNode.n
         for kArg in keywordArgs: #For argument in keyword Args
             if kArg in kwargs: #If in given values
                 s.__dict__[kArg] = kwargs[kArg] 
@@ -427,12 +428,12 @@ class AnalysisNode:
                 s.__dict__[kArg] = analysisNodeDictionary[name][kArg]
             else:
                 s.__dict__[kArg] = analysisNodeDictionary["default"][kArg] #Sets to default value
-        if s.punishDuplicates:
+        if False and s.punishDuplicates:
             if name in punishDuplicatesAvg:
                 s.punishDuplicates = punishDuplicatesAvg[name]
             else:
                 s.punishDuplicates = punishDuplicatesAvg["default"]
-        if s.percentageAccountForValue:
+        if False and s.percentageAccountForValue:
             if name in percentageAccountValues:
                 s.percentageAccountForValue = percentageAccountValues[name]
             else:
@@ -442,19 +443,38 @@ class AnalysisNode:
         
         s.valueNode = valueNode #Setting Value Node 
         s.againstValues = againstValues 
-        s.InitialiseArguments(kwargs)
+        s.InitialiseArguments(s.valueNode.n, kwargs)
         s.value = valueNode.__dict__[f"{toAnalyse}Value"]
-        if s.value == -1:
-            raise ValueError("Invalid Value")
-        if againstValues:
+        if s.value == -1: 
+            print("invalid value for analysis node")
+            return
+        if againstValues and againstValues.mean != -1:
             againstValues : StatNode
             againstValues.values.append(s.value)
             s.valueIndex = (againstValues.values.index(s.value), len(againstValues.values))
             if s.analysisType == 0:
-                s.againstAverage = s.value / againstValues.mean
-                s.againstMedian = s.value/ againstValues.median
-                s.sDAway = (s.value - againstValues.mean) / s.standardDeviation
-            s.valueRarity = (againstValues.groupedValuesCounter[RoundToX(s.value, againstValues.groupValue)], sum(againstValues.groupedValuesCounter.values))
+                try:
+                    s.againstAverage = s.value / againstValues.mean
+                    s.againstMedian = s.value/ againstValues.quartiles[1]
+                    if againstValues.standardDeviation != 0:
+                        s.sDAway = (s.value - againstValues.mean) / againstValues.standardDeviation
+                    else: 
+                        s.sDAway = 0
+                    s.valueRarity = (againstValues.groupedValuesCounter[RoundToX(s.value, againstValues.groupValue)], sum(againstValues.groupedValuesCounter.values()))
+                except ZeroDivisionError as e:
+                    print(s.analysisType)
+                    print(againstValues)
+                    raise e
+                except AttributeError as e:
+                    print(s.valueNode.n)
+                    print(againstValues.valueNode.valueRangeType)
+                    raise e
+
+            else:
+                s.valueRarity = (againstValues.groupedValuesCounter[s.value], sum(againstValues.groupedValuesCounter.values()))
+        else:
+            print("invalid against nodes")
+            return
     def __repr__(s) -> str:
         output = f"""{s.valueNode.n}
 Index: {s.valueIndex[0]} / {s.valueIndex[1]}
@@ -830,33 +850,57 @@ class ReplayAnalysis:
                 allValues = [x.valueNodes[valueNode.n].calculatedValue for x in self.matches]
             self.statNodes.append(StatNode(valueNode, allValues))
     def OneAgainstManyAnalysis(s, toAnalyse, analyseAgainst):#, rankBy = False):
-        objectValueNodes = toAnalyse.valueNodes
+        objectValueNodes = toAnalyse.valueNodes.values()
         analysisNodes = []
+        againstStatNodes = []
         for valueNode in objectValueNodes:
-            nodeName = valueNode.name
+            nodeName = valueNode.n
             againstValueNodes = [x.valueNodes[nodeName].calculatedValue for x in analyseAgainst]
             againstStatNode = StatNode(valueNode, againstValueNodes)
+            againstStatNodes.append(againstStatNode)
             analysisNode = AnalysisNode(valueNode, againstStatNode)
             analysisNodes.append(analysisNode)
         #if rankBy:
         #    analysisNodes.sort(key = lambda x : x.__dict__[rankBy] * x.relevancy)
-        return analysisNodes
+        return analysisNodes, againstStatNodes
     def HeadToHeadAnalysis(s, toAnalyse, analyseAgainst, rankBy = False):
         pass
-    def ConvertIndexToPosition(position):
+    def ConvertIndexToPosition(s, position):
         return f"{ascii_uppercase[position[0] - 1]}{position[1]}"
     def OutputAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None, override = True):
         filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
         #filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
-        valueNColumns = ["name", "calculatedValue", "rawValue", "percentageOf"]
-        analysisNColumns = [("valueIndex", 2), "againstAverage", "againstMedian", "sDAway", "valueRarity", "relevancy"]
+        valueNColumns = ["n", "calculatedValue", "rawValue", "percentageOf"]
+        analysisNColumns = [("valueIndex", 2), "againstAverage", "againstMedian", "sDAway", ("valueRarity", 2), "relevancy"]
         statNColumns = ["mean", ("quartiles", 3), "mode", "standardDeviation", "groupedMode"]
-        valueNData = [[y.valueNode.__dict__[x] for x in valueNColumns] for y in analysisNodes]
-        analysisNData = [[y.__dict__[x] for x in analysisNColumns] for y in analysisNodes]
-        statNData = [[y.__dict__[x] for x in statNColumns] for y in analysedAgainst]
+        #valueNData = [[y.valueNode.__dict__[x] for x in valueNColumns] for y in analysisNodes]
+        #analysisNData = [[y.__dict__[x] for x in analysisNColumns] for y in analysisNodes]
+        #statNData = [[y.__dict__[x] for x in statNColumns] for y in analysedAgainst]
         combinedData = []
-        for i in range(len(valueNData)):
-            combinedData.append(valueNData[i] + analysisNData[i] + statNData[i])
+        for i in range(len(analysisNodes)):
+            rowToAdd = []
+            for x in valueNColumns:
+                try:
+                    rowToAdd.append(analysisNodes[i].valueNode.__dict__[x])
+                except KeyError:
+                    rowToAdd.append(-1)
+            for x in analysisNColumns:
+                key = x
+                if isinstance(x, tuple):
+                    key = x[0]
+                try:
+                    rowToAdd.append(analysisNodes[i].valueNode.__dict__[key])
+                except KeyError:
+                    rowToAdd.append(-1)
+            for x in statNColumns:
+                key = x
+                if isinstance(x, tuple):
+                    key = x[0]
+                try:
+                    rowToAdd.append(analysisNodes[i].valueNode.__dict__[key])
+                except KeyError:
+                    rowToAdd.append(-1)
+            combinedData.append(rowToAdd)
         xlWorkbook = xl.load_workbook(filePath)
         if not sheet:
             xlSheet = xlWorkbook.active
@@ -868,7 +912,7 @@ class ReplayAnalysis:
                 xlSheet[s.ConvertIndexToPosition((startPosition[0] + i + additionalLength, startPosition[1]))].value = columnName
             else:
                 for _ in range(columnName[1]):
-                    xlSheet[s.ConvertIndexToPosition((startPosition[0] + i + additionalLength, startPosition[1]))].value = columnName[1] + str(_)
+                    xlSheet[s.ConvertIndexToPosition((startPosition[0] + i + additionalLength, startPosition[1]))].value = str(columnName[1]) + str(_)
                     additionalLength += 1
         
         for y, row in enumerate(combinedData):
@@ -879,19 +923,24 @@ class ReplayAnalysis:
                         xlSheet[s.ConvertIndexToPosition((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = singlePoint
                         additionalLength += 1
                 else:
-                    xlSheet[s.ConvertIndexToPosition((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = dataPoint
+                    try:
+                        xlSheet[s.ConvertIndexToPosition((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = dataPoint
+                    except ValueError:
+                        xlSheet[s.ConvertIndexToPosition((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = dataPoint[0]
         overallLength = len(valueNColumns) + len(analysisNColumns) + len(statNColumns)
         endPosition = (startPosition[0] + overallLength, startPosition[1] + len(analysisNodes))
-        table = Table(displayName = "Output Analysis", ref = f"{s.ConvertIndexToPosition(startPosition)}:{s.ConvertIndexToPosition(endPosition)}")
+        table = Table(displayName = "OutputAnalysis", ref = f"{s.ConvertIndexToPosition(startPosition)}:{s.ConvertIndexToPosition(endPosition)}")
         style = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
                        showLastColumn=False, showRowStripes=True, showColumnStripes=True)
         table.tableStyleInfo = style
         xlSheet.add_table(table)
+
+        xlWorkbook.save(filePath)
         
 
 if __name__ == '__main__':
     replayEngine = ReplayAnalysis()
     match, players = replayEngine.GetReplay(123, False)
-    output = replayEngine.OneAgainstManyAnalysis(players[0], players[1:])
-    replayEngine.OutputAnalysisExcel(output)
+    output, against = replayEngine.OneAgainstManyAnalysis(players[0], players[1:])
+    replayEngine.OutputAnalysisExcel(output, against)
 
