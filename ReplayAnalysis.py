@@ -5,6 +5,7 @@ from string import ascii_letters, ascii_uppercase
 from collections import Counter
 from os import remove
 from unicodedata import name
+from xml.etree.ElementInclude import include
 import openpyxl as xl
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
@@ -187,12 +188,14 @@ class ValueNode:
         node.calculatedValue = cachedValue
         return node
 class StatNode:
-    def __init__(self, valueNode : ValueNode, values : list) -> None:
+    def __init__(self, valueNode : ValueNode, values : list, includeValueNode = False) -> None:
         """ValueNode : Example ValueNode of Value
            Values : List of Raw Values (not Value Nodes)"""
         self.name = valueNode.n
         self.valueNode = valueNode
         self.values = [x for x in values if x != -1]
+        if includeValueNode:
+            self.values.append(valueNode.__dict__[includeValueNode])
         self.numValues = len(self.values)
         if self.numValues > 0:
             self.CalculateStats()
@@ -440,9 +443,9 @@ class AnalysisNode:
                 s.percentageAccountForValue = percentageAccountValues[name]
             else:
                 s.percentageAccountForValue = percentageAccountValues["default"]
-    def __init__(s, valueNode : ValueNode, againstValues = None, toAnalyse = "calculated", **kwargs) -> None:
+    def __init__(s, valueNode : ValueNode, againstValues = None, toAnalyse = "calculated", insertValue = True, **kwargs) -> None:
         #Account for Duplicates, Punish Duplicates, Relevancy, 
-        
+        s.rBreak = " "
         s.valueNode = valueNode #Setting Value Node 
         s.againstValues = againstValues 
         s.InitialiseArguments(s.valueNode.n, kwargs)
@@ -452,7 +455,8 @@ class AnalysisNode:
             return
         if againstValues and againstValues.mean != -1:
             againstValues : StatNode
-            againstValues.values.append(s.value)
+            if insertValue:
+                againstValues.values.append(s.value)
             s.valueIndex = (againstValues.values.index(s.value), len(againstValues.values))
             if s.analysisType == 0:
                 try:
@@ -462,6 +466,8 @@ class AnalysisNode:
                         s.sDAway = (s.value - againstValues.mean) / againstValues.standardDeviation
                     else: 
                         s.sDAway = 0
+                    #print(valueNode.n)
+                    #print(againstValues.groupedValuesCounter)
                     s.valueRarity = (againstValues.groupedValuesCounter[RoundToX(s.value, againstValues.groupValue)], sum(againstValues.groupedValuesCounter.values()))
                 except ZeroDivisionError as e:
                     print(s.analysisType)
@@ -477,6 +483,10 @@ class AnalysisNode:
         else:
             print("invalid against nodes")
             return
+        s.calculatedRelevancy = s.relevancy * (1.5 - s.valueRarity[0] / s.valueRarity[1])
+        if s.analysisType == 0:
+            s.calculatedRelevancy *= (1 - s.againstAverage) * (1 - s.againstMedian) * (1 + s.sDAway)
+        s.absRelevancy = abs(s.calculatedRelevancy) 
     def __repr__(s) -> str:
         output = f"""{s.valueNode.n}
 Index: {s.valueIndex[0]} / {s.valueIndex[1]}
@@ -861,8 +871,8 @@ class ReplayAnalysis:
             nodeName = valueNode.n
             #print(nodeName)
             againstValueNodes = [x.valueNodes[nodeName].calculatedValue for x in analyseAgainst]
-            againstStatNode = StatNode(valueNode, againstValueNodes)
-            analysisNode = AnalysisNode(valueNode, againstStatNode)
+            againstStatNode = StatNode(valueNode, againstValueNodes, includeValueNode = "calculatedValue")
+            analysisNode = AnalysisNode(valueNode, againstStatNode, insertValue = False)
             againstStatNodes.append(againstStatNode)
             analysisNodes.append(analysisNode)
         #if rankBy:
@@ -876,7 +886,7 @@ class ReplayAnalysis:
         filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
         #filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
         valueNColumns = ["n", "calculatedValue", "rawValue", "percentageOf"]
-        analysisNColumns = [("valueIndex", 2), "againstAverage", "againstMedian", "sDAway", ("valueRarity", 2), "relevancy"]
+        analysisNColumns = [("valueIndex", 2), "againstAverage", "againstMedian", "sDAway", ("valueRarity", 2), "relevancy", "calculatedRelevancy", "absRelevancy", "rBreak"]
         statNColumns = ["mean", ("quartiles", 3), "mode", "standardDeviation", "groupedMode"]
         allColumnsCombined = valueNColumns + analysisNColumns + statNColumns
         sumAdditionalColumnLength = sum([x[1] - 1 for x in allColumnsCombined if isinstance(x, tuple)])
@@ -894,12 +904,15 @@ class ReplayAnalysis:
                     rowToAdd.append(-1)
             for x in analysisNColumns:
                 key = x
-                if isinstance(x, tuple):
+                if isinstance(x, tuple):#-1 multiple times for tuples
                     key = x[0]
                 try:
                     rowToAdd.append(node.__dict__[key])
                 except KeyError:
-                    rowToAdd.append(-1)
+                    if isinstance(x, tuple):
+                        rowToAdd.extend([-1 for _ in range(x[1])])
+                    else:
+                        rowToAdd.append(-1)
             for x in statNColumns:
                 key = x
                 if isinstance(x, tuple):
@@ -907,7 +920,10 @@ class ReplayAnalysis:
                 try:
                     rowToAdd.append(analysedAgainst[i].__dict__[key])
                 except KeyError:
-                    rowToAdd.append(-1)
+                    if isinstance(x, tuple):
+                        rowToAdd.extend([-1 for _ in range(x[1])])
+                    else:
+                        rowToAdd.append(-1)
             combinedData.append(rowToAdd)
         xlWorkbook = xl.load_workbook(filePath)
         if not sheet:
@@ -926,7 +942,6 @@ class ReplayAnalysis:
         #print(combinedData)
         for y, row in enumerate(combinedData):
             additionalLength = 0
-            print(row)
             for x, dataPoint in enumerate(row):
                 if isinstance(dataPoint, (list, tuple)):
                     for singlePoint in dataPoint:
