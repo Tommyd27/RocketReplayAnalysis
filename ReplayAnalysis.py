@@ -137,7 +137,7 @@ class ValueNode:
         if "rawValue" in s.__dict__:
             output += f", Raw Value: {s.rawValue}, Percentage Of: {s.percentageOf}, Calculated Value: {s.calculatedValue}"
         return output
-    def GiveValue(s, rawValue, percentageOf = None, calculationValues = None, individualPlayers = None, teamCalculation = False):
+    def GiveValue(s, rawValue, percentageOf = None, calculationValues = None, individualPlayers = None, teamCalculation = False, gName = None):
         """
         Raw Value: Value of Node
         Percentage Of: What is is percentage of/ will be divided by
@@ -148,8 +148,10 @@ class ValueNode:
         Output:
         
         Returns new node"""
-        
-        node = ValueNode(s.n, s.p, s.c, s.tS, s.default, s.valueType, s.valueRangeType, s.tag) 
+        name = s.n
+        if gName:
+            name = gName
+        node = ValueNode(name, s.p, s.c, s.tS, s.default, s.valueType, s.valueRangeType, s.tag) 
         node.rawValue = rawValue
         node.percentageOf = percentageOf
         node.calculationValues = calculationValues
@@ -565,7 +567,8 @@ class Player:
             else:
                 divValues = None       
             self.valueNodes[node.n] = node.GiveValue(rawValue, None, calcVariables)
-            self.valueNodes[f"{node.n}%{node.p}"] = node.GiveValue(rawValue, divValues, calcVariables)
+            if node.p:
+                self.valueNodes[f"{node.n}%{node.p}"] = node.GiveValue(rawValue, divValues, calcVariables, gName = f"{node.n}%{node.p}")
 class PlayerHistoric(Player):
     countForHistoric = 3
     def __init__(s, players, intensiveStats = True):
@@ -740,7 +743,7 @@ class ReplayAnalysis:
             f.close()
         self.altConn = sqlite3.connect(dbFile)
         self.altC = self.altConn.cursor()
-    def GetReplay(self, replayID, getTeams = True):
+    def GetReplayDB(self, replayID, getTeams = True):
         if replayID < 0:
             executeSTR = f"SELECT matchID FROM matchTable ORDER BY matchID DESC;"
             self.c.execute(executeSTR)
@@ -759,13 +762,14 @@ class ReplayAnalysis:
             return Match(matchDetails), players, [Team([x for x in players if x.pList[8] == "blue"], matchDetails), Team([x for x in players if x.pList[8] == "orange"], matchDetails)]
         else:
             return Match(matchDetails), [Player(x, matchDetails) for x in players]    
-    def FetchGame(self, replayID):
+    def GetReplay(self, replayID, getTeams = True):
         match = [x for x in self.matches if x.mL[0] == replayID][0]
         players = [x for x in self.players if x.mL[0] == replayID]
-        teams = [x for x in self.teams if x.mL[0] == replayID]
-
-        historicPlayers = []
-    def LoadReplays(self, tagsToLoad, num = -1, loadTeams = True, instantiateHistoricPlayers = True, instantiateHistoricTeams = True):
+        if getTeams:
+            teams = [x for x in self.teams if x.mL[0] == replayID]
+            return match, players, teams
+        return match, players
+    def LoadReplays(self, tagsToLoad, num = -1, loadTeams = True, instantiateHistoricPlayers = True, instantiateHistoricTeams = True, loadStatNodes = True):
         tagsSTR = ""
         if tagsToLoad:
             tagsSTR = f""" WHERE {'and'.join([f'{x[0]} = "{x[1]}"' if isinstance(x[1], str) else f'{x[0]} = {x[1]}' for x in tagsToLoad])}"""
@@ -838,27 +842,28 @@ class ReplayAnalysis:
                 self.historicPlayers.append(PlayerHistoric(hPlayer))
         if instantiateHistoricTeams:
             pass
-        
-        for valueNode in list(valueNodes["Match"].values()) + list(valueNodes["Player"].values()):
-            print(valueNode.n)
-            if valueNode.c:
-                continue
-            valueNode : ValueNode
-            if valueNode.valueType == "Player":
-                allValues = [x.valueNodes[valueNode.n].calculatedValue for x in self.players]
-            elif valueNode.valueType == "Match":
-                allValues = [x.valueNodes[valueNode.n].calculatedValue for x in self.matches]
-            self.statNodes.append(StatNode(valueNode, allValues))
+        if loadStatNodes:
+            for valueNode in list(valueNodes["Match"].values()) + list(valueNodes["Player"].values()):
+                print(valueNode.n)
+                if valueNode.c:
+                    continue
+                valueNode : ValueNode
+                if valueNode.valueType == "Player":
+                    allValues = [x.valueNodes[valueNode.n].calculatedValue for x in self.players]
+                elif valueNode.valueType == "Match":
+                    allValues = [x.valueNodes[valueNode.n].calculatedValue for x in self.matches]
+                self.statNodes.append(StatNode(valueNode, allValues))
     def OneAgainstManyAnalysis(s, toAnalyse, analyseAgainst):#, rankBy = False):
         objectValueNodes = toAnalyse.valueNodes.values()
         analysisNodes = []
         againstStatNodes = []
         for valueNode in objectValueNodes:
             nodeName = valueNode.n
+            #print(nodeName)
             againstValueNodes = [x.valueNodes[nodeName].calculatedValue for x in analyseAgainst]
             againstStatNode = StatNode(valueNode, againstValueNodes)
-            againstStatNodes.append(againstStatNode)
             analysisNode = AnalysisNode(valueNode, againstStatNode)
+            againstStatNodes.append(againstStatNode)
             analysisNodes.append(analysisNode)
         #if rankBy:
         #    analysisNodes.sort(key = lambda x : x.__dict__[rankBy] * x.relevancy)
@@ -873,15 +878,18 @@ class ReplayAnalysis:
         valueNColumns = ["n", "calculatedValue", "rawValue", "percentageOf"]
         analysisNColumns = [("valueIndex", 2), "againstAverage", "againstMedian", "sDAway", ("valueRarity", 2), "relevancy"]
         statNColumns = ["mean", ("quartiles", 3), "mode", "standardDeviation", "groupedMode"]
+        allColumnsCombined = valueNColumns + analysisNColumns + statNColumns
+        sumAdditionalColumnLength = sum([x[1] - 1 for x in allColumnsCombined if isinstance(x, tuple)])
         #valueNData = [[y.valueNode.__dict__[x] for x in valueNColumns] for y in analysisNodes]
         #analysisNData = [[y.__dict__[x] for x in analysisNColumns] for y in analysisNodes]
         #statNData = [[y.__dict__[x] for x in statNColumns] for y in analysedAgainst]
         combinedData = []
-        for i in range(len(analysisNodes)):
+        for i, node in enumerate(analysisNodes):
+            #print(node.valueNode.n)
             rowToAdd = []
             for x in valueNColumns:
                 try:
-                    rowToAdd.append(analysisNodes[i].valueNode.__dict__[x])
+                    rowToAdd.append(node.valueNode.__dict__[x])
                 except KeyError:
                     rowToAdd.append(-1)
             for x in analysisNColumns:
@@ -889,7 +897,7 @@ class ReplayAnalysis:
                 if isinstance(x, tuple):
                     key = x[0]
                 try:
-                    rowToAdd.append(analysisNodes[i].valueNode.__dict__[key])
+                    rowToAdd.append(node.__dict__[key])
                 except KeyError:
                     rowToAdd.append(-1)
             for x in statNColumns:
@@ -897,7 +905,7 @@ class ReplayAnalysis:
                 if isinstance(x, tuple):
                     key = x[0]
                 try:
-                    rowToAdd.append(analysisNodes[i].valueNode.__dict__[key])
+                    rowToAdd.append(analysedAgainst[i].__dict__[key])
                 except KeyError:
                     rowToAdd.append(-1)
             combinedData.append(rowToAdd)
@@ -907,39 +915,50 @@ class ReplayAnalysis:
         else:
             xlSheet = xlWorkbook[sheet]
         additionalLength = 0
-        for i, columnName in enumerate(valueNColumns + analysisNColumns + statNColumns):
-            if isinstance(columnName, str):
+        for i, columnName in enumerate(allColumnsCombined):
+            if not isinstance(columnName, tuple):
                 xlSheet[s.ConvertIndexToPosition((startPosition[0] + i + additionalLength, startPosition[1]))].value = columnName
             else:
                 for _ in range(columnName[1]):
-                    xlSheet[s.ConvertIndexToPosition((startPosition[0] + i + additionalLength, startPosition[1]))].value = str(columnName[1]) + str(_)
+                    xlSheet[s.ConvertIndexToPosition((startPosition[0] + i + additionalLength, startPosition[1]))].value = str(columnName[0]) + str(_)
                     additionalLength += 1
-        
+                additionalLength -= 1
+        #print(combinedData)
         for y, row in enumerate(combinedData):
             additionalLength = 0
+            print(row)
             for x, dataPoint in enumerate(row):
-                if isinstance(x, (list, tuple)):
+                if isinstance(dataPoint, (list, tuple)):
                     for singlePoint in dataPoint:
                         xlSheet[s.ConvertIndexToPosition((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = singlePoint
                         additionalLength += 1
+                    additionalLength -= 1
                 else:
                     try:
                         xlSheet[s.ConvertIndexToPosition((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = dataPoint
                     except ValueError:
                         xlSheet[s.ConvertIndexToPosition((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = dataPoint[0]
-        overallLength = len(valueNColumns) + len(analysisNColumns) + len(statNColumns)
+        overallLength = len(valueNColumns) + len(analysisNColumns) + len(statNColumns) + sumAdditionalColumnLength - 1
         endPosition = (startPosition[0] + overallLength, startPosition[1] + len(analysisNodes))
         table = Table(displayName = "OutputAnalysis", ref = f"{s.ConvertIndexToPosition(startPosition)}:{s.ConvertIndexToPosition(endPosition)}")
         style = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
                        showLastColumn=False, showRowStripes=True, showColumnStripes=True)
         table.tableStyleInfo = style
-        xlSheet.add_table(table)
+        try:
+            xlSheet.add_table(table)
+        except ValueError as e:
+            if override:
+                del xlSheet.tables["OutputAnalysis"]
+                xlSheet.add_table(table)
+            else:
+                raise e
 
         xlWorkbook.save(filePath)
         
 
 if __name__ == '__main__':
-    replayEngine = ReplayAnalysis()
+    replayEngine = ReplayAnalysis(False)
+    replayEngine.LoadReplays(None, loadStatNodes = False)
     match, players = replayEngine.GetReplay(123, False)
     output, against = replayEngine.OneAgainstManyAnalysis(players[0], players[1:])
     replayEngine.OutputAnalysisExcel(output, against)
