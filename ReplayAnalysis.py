@@ -6,6 +6,7 @@ from collections import Counter
 from os import remove
 from unicodedata import name
 from xml.etree.ElementInclude import include
+from numpy import isin
 import openpyxl as xl
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
@@ -255,6 +256,13 @@ class StatNode:
         output += s.OutputValuesStr()
         return output
     def CompareAgainstStatNode(s, otherStatNode):
+        """s: Self
+        otherStatNode: Stat Node to Compare Against
+        
+        Output (valueRangeType == 0):
+        -Values compared against each other, relative then differential
+        Output (valueRangeType != 0):
+        -Relative values compared for each count, output in two lists relative and differential"""
         otherStatNode : StatNode
         if s.valueNode.valueRangeType == 0:
             valuesToCompare = ["mean", "quartiles", "standardDeviation", "groupedMode"]
@@ -725,14 +733,23 @@ class Match:
         for node in self.nodes:
             output += f"{node} : {self.nodes[node]}\n"
         return output
-
+class Cell:
+    def __init__(self, x, y, value) -> None:
+        self.x = x
+        self.y = y
+        self.v = value
+    def SelfToPosition(self):
+        return f"{ascii_uppercase[self.x]}{self.y + 1}"
+    def PlaceValue(self, xlSheet):
+        xlSheet[self.SelfToPosition()].value = self.v
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, args = None):
         #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
         self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
-
+        self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        #self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
         self.altdbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
         #self.altdbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
         #self.altdbFile = ":memory:"
@@ -877,13 +894,11 @@ class ReplayAnalysis:
         #if rankBy:
         #    analysisNodes.sort(key = lambda x : x.__dict__[rankBy] * x.relevancy)
         return analysisNodes, againstStatNodes
-    def HeadToHeadAnalysis(s, toAnalyse, analyseAgainst, rankBy = False):
+    def TwoPlayerHistoricAnalysis(s, pToAnalyse, pToAnalyseAgainst, rankBy = False):
         pass
     def ConvertIndexToPosition(s, position):
         return f"{ascii_uppercase[position[0] - 1]}{position[1]}"
-    def OutputAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None, override = True):
-        #filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
-        filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+    def OneAgainstManyAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None, override = True):
         valueNColumns = ["n", "calculatedValue", "rawValue", "percentageOf"]
         analysisNColumns = [("valueIndex", 2), "againstAverage", "againstMedian", "sDAway", ("valueRarity", 2), "relevancy", "calculatedRelevancy", "absRelevancy", "rBreak"]
         statNColumns = ["mean", ("quartiles", 3), "mode", "standardDeviation", "groupedMode"]
@@ -924,7 +939,7 @@ class ReplayAnalysis:
                     else:
                         rowToAdd.append(-1)
             combinedData.append(rowToAdd)
-        xlWorkbook = xl.load_workbook(filePath)
+        xlWorkbook = xl.load_workbook(s.filePath)
         if not sheet:
             xlSheet = xlWorkbook.active
         else:
@@ -968,8 +983,36 @@ class ReplayAnalysis:
                 raise e
 
         xlWorkbook.save(filePath)
+    def OutputPlayerHeadToHead(s, ourPlayer, againstPlayer, startPosition = (1, 1), sheet = None, override = True):
+        xlWorkbook = xl.load_workbook(s.filePath)
+        if not sheet:
+            xlSheet = xlWorkbook.active
+        else:
+            xlSheet = xlWorkbook[sheet]
+        table = s.RecurseTable()
+    def RecurseTable(self, key, value, x, y):
+        """example dict:
         
-
+        dict = {"key1" : value1,
+                "key2" : [value2, value3, value4],
+                "key3" : {"valueKey1" : value5,
+                          "valueKey2" : [value6, value7]}}
+        """
+        outputValues = [Cell(x, y, key)]
+        y += 1
+        if isinstance(value, dict):
+            for key, val in value.items():
+                x, y, recurseReturn = self.RecurseTable(key, val, x, y)
+                outputValues += recurseReturn
+        elif isinstance(value, (list, tuple)):
+            for val in value:
+                outputValues.append(Cell(x, y, val))
+                x += 1
+            x -= 1
+        else:
+            outputValues.append(Cell(x, y, value))
+        x += 1
+        return x, y, outputValues
 if __name__ == '__main__':
     replayEngine = ReplayAnalysis(False)
     replayEngine.LoadReplays(None, loadStatNodes = False)
