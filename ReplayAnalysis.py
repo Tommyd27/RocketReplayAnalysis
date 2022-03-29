@@ -268,13 +268,22 @@ class StatNode:
             valuesToCompare = ["mean", "quartiles", "standardDeviation", "groupedMode"]
             valuesCompared = {}
             for value in valuesToCompare:
-                ourValue = s.__dict__[value]
-                theirValue = otherStatNode.__dict__[value]
-                if theirValue == 0:
-                    theirValue = ourValue / -1
+                if value == "quartiles":
+                    for i, ourValue in s.__dict__[value]:
+                        theirValue = otherStatNode.__dict__[value][i]
+                        if theirValue == 0:
+                            theirValue = ourValue / -1
+                            if theirValue == 0:
+                                theirValue = -1
+                        valuesCompared[f"{value}{i}"] = [ourValue / theirValue, ourValue - theirValue]    
+                else:
+                    ourValue = s.__dict__[value]
+                    theirValue = otherStatNode.__dict__[value]
                     if theirValue == 0:
-                        theirValue = -1
-                valuesCompared[value] = [ourValue / theirValue, ourValue - theirValue]
+                        theirValue = ourValue / -1
+                        if theirValue == 0:
+                            theirValue = -1
+                    valuesCompared[value] = [ourValue / theirValue, ourValue - theirValue]
         else:
             relativeCounts = []
             differentialCount = {}
@@ -990,8 +999,16 @@ class ReplayAnalysis:
         else:
             xlSheet = xlWorkbook[sheet]
         allQuantativeComparisons = [x for x in comparedStatNodes if x.valueRangeType == 0]
-        columns = ["n", "meanRelative", ,"meanDifferential", "quartilesRelative", "quartilesDifferential", "standardDeviationRelative", "standardDeviationDifferential", "groupedModeRelative", "groupedModeDifferential"]
+        dataToTable = {}
+        for comparedNode in allQuantativeComparisons:
+            dataToTable[comparedNode.valueNode.n] = comparedNode.comparedAnalysis
+        s.GenerateTable(dataToTable)
         #table = s.RecurseTable()
+    def GenerateTable(s, dataToTable):
+        columns = ["name"] + dataToTable[dataToTable.keys()[0]].keys()
+        data = []
+        for key, item in dataToTable:
+            data = [key] + [x for x in item.values()]
     def RecurseTable(self, key, value, x, y):
         """example dict:
         
