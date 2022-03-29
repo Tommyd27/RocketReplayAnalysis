@@ -983,13 +983,15 @@ class ReplayAnalysis:
                 raise e
 
         xlWorkbook.save(filePath)
-    def OutputPlayerHeadToHead(s, ourPlayer, againstPlayer, startPosition = (1, 1), sheet = None, override = True):
+    def OutputPlayerHeadToHead(s, comparedStatNodes, ourPlayer, againstPlayer, startPosition = (1, 1), sheet = None, override = True):
         xlWorkbook = xl.load_workbook(s.filePath)
         if not sheet:
             xlSheet = xlWorkbook.active
         else:
             xlSheet = xlWorkbook[sheet]
-        table = s.RecurseTable()
+        allQuantativeComparisons = [x for x in comparedStatNodes if x.valueRangeType == 0]
+        columns = ["n", "meanRelative", ,"meanDifferential", "quartilesRelative", "quartilesDifferential", "standardDeviationRelative", "standardDeviationDifferential", "groupedModeRelative", "groupedModeDifferential"]
+        #table = s.RecurseTable()
     def RecurseTable(self, key, value, x, y):
         """example dict:
         
