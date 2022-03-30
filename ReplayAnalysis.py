@@ -903,8 +903,14 @@ class ReplayAnalysis:
         #if rankBy:
         #    analysisNodes.sort(key = lambda x : x.__dict__[rankBy] * x.relevancy)
         return analysisNodes, againstStatNodes
-    def TwoPlayerHistoricAnalysis(s, pToAnalyse, pToAnalyseAgainst, rankBy = False):
-        pass
+    def TwoPlayerHistoricAnalysis(s, pToAnalyse : PlayerHistoric, pToAnalyseAgainst : PlayerHistoric, rankBy = False):
+        ourStatNodes = pToAnalyse.statNodes
+        theirStatNodes = pToAnalyseAgainst.statNodes
+        comparedStatNodes = []
+        for i in range(len(ourStatNodes)):
+            node = ourStatNodes[i]
+            tNode = theirStatNodes[i]
+            comparedStatNodes = node.CompareAgainstStatNode(tNode)
     def ConvertIndexToPosition(s, position):
         return f"{ascii_uppercase[position[0] - 1]}{position[1]}"
     def OneAgainstManyAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None, override = True):
@@ -1002,13 +1008,18 @@ class ReplayAnalysis:
         dataToTable = {}
         for comparedNode in allQuantativeComparisons:
             dataToTable[comparedNode.valueNode.n] = comparedNode.comparedAnalysis
-        s.GenerateTable(dataToTable)
-        #table = s.RecurseTable()
+        dataTable = s.GenerateTable(dataToTable)
+
+        for y, row in enumerate(dataTable, 1):
+            for x, value in enumerate(row, 1):
+                xlSheet[s.ConvertIndexToPosition((x, y))].value = value
+        #table = s .RecurseTable()
     def GenerateTable(s, dataToTable):
         columns = ["name"] + dataToTable[dataToTable.keys()[0]].keys()
         data = []
         for key, item in dataToTable:
             data = [key] + [x for x in item.values()]
+        return [columns] + data
     def RecurseTable(self, key, value, x, y):
         """example dict:
         
