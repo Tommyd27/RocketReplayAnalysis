@@ -3,9 +3,6 @@ import sqlite3
 from string import ascii_letters, ascii_uppercase
 from collections import Counter
 from os import remove
-from unicodedata import name
-from xml.etree.ElementInclude import include
-from numpy import isin
 import openpyxl as xl
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
