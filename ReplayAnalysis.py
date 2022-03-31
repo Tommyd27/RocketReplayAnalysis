@@ -1,4 +1,3 @@
-from inspect import Attribute
 import sqlite3
 
 from string import ascii_letters, ascii_uppercase
@@ -757,8 +756,8 @@ class ReplayAnalysis:
         self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
-        self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
-        #self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        #self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
         self.altdbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
         #self.altdbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
         #self.altdbFile = ":memory:"
@@ -904,13 +903,14 @@ class ReplayAnalysis:
         #    analysisNodes.sort(key = lambda x : x.__dict__[rankBy] * x.relevancy)
         return analysisNodes, againstStatNodes
     def TwoPlayerHistoricAnalysis(s, pToAnalyse : PlayerHistoric, pToAnalyseAgainst : PlayerHistoric, rankBy = False):
-        ourStatNodes = pToAnalyse.statNodes
-        theirStatNodes = pToAnalyseAgainst.statNodes
+        ourStatNodes = [x for x in pToAnalyse.statNodes.values()]
+        theirStatNodes = [x for x in pToAnalyseAgainst.statNodes.values()]
         comparedStatNodes = []
         for i in range(len(ourStatNodes)):
             node = ourStatNodes[i]
             tNode = theirStatNodes[i]
             comparedStatNodes = node.CompareAgainstStatNode(tNode)
+        return comparedStatNodes
     def ConvertIndexToPosition(s, position):
         return f"{ascii_uppercase[position[0] - 1]}{position[1]}"
     def OneAgainstManyAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None, override = True):
@@ -1046,7 +1046,10 @@ class ReplayAnalysis:
 if __name__ == '__main__':
     replayEngine = ReplayAnalysis(False)
     replayEngine.LoadReplays(None, loadStatNodes = False)
-    match, players = replayEngine.GetReplay(123, False)
-    output, against = replayEngine.OneAgainstManyAnalysis(players[0], players[1:])
-    replayEngine.OutputAnalysisExcel(output, against)
+    #match, players = replayEngine.GetReplay(123, False)
+    #output, against = replayEngine.OneAgainstManyAnalysis(players[0], players[1:])
+    #replayEngine.OutputAnalysisExcel(output, against)
+
+    output = replayEngine.TwoPlayerHistoricAnalysis(replayEngine.historicPlayers[0], replayEngine.historicPlayers[1])
+    replayEngine.OutputPlayerHeadToHead(output, replayEngine.historicPlayers[0], replayEngine.historicPlayers[1])
 
