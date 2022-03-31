@@ -264,18 +264,22 @@ class StatNode:
         Output (valueRangeType != 0):
         -Relative values compared for each count, output in two lists relative and differential"""
         otherStatNode : StatNode
+        valuesCompared = []
         if s.valueNode.valueRangeType == 0:
             valuesToCompare = ["mean", "quartiles", "standardDeviation", "groupedMode"]
             valuesCompared = {}
             for value in valuesToCompare:
                 if value == "quartiles":
-                    for i, ourValue in s.__dict__[value]:
-                        theirValue = otherStatNode.__dict__[value][i]
-                        if theirValue == 0:
-                            theirValue = ourValue / -1
+                    try:
+                        for i, ourValue in enumerate(s.__dict__[value]):
+                            theirValue = otherStatNode.__dict__[value][i]
                             if theirValue == 0:
-                                theirValue = -1
-                        valuesCompared[f"{value}{i}"] = [ourValue / theirValue, ourValue - theirValue]    
+                                theirValue = ourValue / -1
+                                if theirValue == 0:
+                                    theirValue = -1
+                            valuesCompared[f"{value}{i}"] = [ourValue / theirValue, ourValue - theirValue]    
+                    except KeyError:
+                        print(s.__dict__)
                 else:
                     ourValue = s.__dict__[value]
                     theirValue = otherStatNode.__dict__[value]
@@ -284,7 +288,7 @@ class StatNode:
                         if theirValue == 0:
                             theirValue = -1
                     valuesCompared[value] = [ourValue / theirValue, ourValue - theirValue]
-        else:
+        elif False:   
             relativeCounts = []
             differentialCount = {}
             relativeDifferenceCount = {}
@@ -295,7 +299,8 @@ class StatNode:
                     relativeCount[key] = counter[key] / length
                 relativeCounts.append(relativeCount)
             while len(relativeCounts[0]) > 0:
-                key = relativeCounts[0][relativeCounts[0].keys()[0]]
+                fKey = [x for x in relativeCounts[0].keys()][0]
+                key = relativeCounts[0][fKey]
                 ourRelativeValue = relativeCounts[0].pop(key)
                 try:
                     theirRelativeValue = relativeCounts[1].pop(key)
@@ -753,8 +758,8 @@ class Cell:
         xlSheet[self.SelfToPosition()].value = self.v
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, args = None):
-        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
         self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
@@ -904,13 +909,14 @@ class ReplayAnalysis:
         #    analysisNodes.sort(key = lambda x : x.__dict__[rankBy] * x.relevancy)
         return analysisNodes, againstStatNodes
     def TwoPlayerHistoricAnalysis(s, pToAnalyse : PlayerHistoric, pToAnalyseAgainst : PlayerHistoric, rankBy = False):
-        ourStatNodes = pToAnalyse.statNodes
-        theirStatNodes = pToAnalyseAgainst.statNodes
+        ourStatNodes = [x for x in pToAnalyse.statNodes.values()]
+        theirStatNodes = [x for x in pToAnalyseAgainst.statNodes.values()]
         comparedStatNodes = []
         for i in range(len(ourStatNodes)):
             node = ourStatNodes[i]
             tNode = theirStatNodes[i]
-            comparedStatNodes = node.CompareAgainstStatNode(tNode)
+            comparedStatNodes.append(node.CompareAgainstStatNode(tNode))
+        return comparedStatNodes
     def ConvertIndexToPosition(s, position):
         return f"{ascii_uppercase[position[0] - 1]}{position[1]}"
     def OneAgainstManyAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None, override = True):
@@ -1015,7 +1021,8 @@ class ReplayAnalysis:
                 xlSheet[s.ConvertIndexToPosition((x, y))].value = value
         #table = s .RecurseTable()
     def GenerateTable(s, dataToTable):
-        columns = ["name"] + dataToTable[dataToTable.keys()[0]].keys()
+        firstKey = [x for x in dataToTable.keys()][0]
+        columns = ["name"] + dataToTable[firstKey].keys()
         data = []
         for key, item in dataToTable:
             data = [key] + [x for x in item.values()]
@@ -1047,6 +1054,7 @@ if __name__ == '__main__':
     replayEngine = ReplayAnalysis(False)
     replayEngine.LoadReplays(None, loadStatNodes = False)
     match, players = replayEngine.GetReplay(123, False)
-    output, against = replayEngine.OneAgainstManyAnalysis(players[0], players[1:])
-    replayEngine.OutputAnalysisExcel(output, against)
+    comparedStatNodes = replayEngine.TwoPlayerHistoricAnalysis(replayEngine.historicPlayers[0], replayEngine.historicPlayers[1])
+    replayEngine.OutputPlayerHeadToHead(comparedStatNodes)
+
 
