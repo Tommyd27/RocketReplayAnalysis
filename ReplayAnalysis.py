@@ -275,15 +275,18 @@ class StatNode:
                                     theirValue = -1
                             valuesCompared[f"{value}{i}"] = [ourValue / theirValue, ourValue - theirValue]    
                     except KeyError:
-                        print(s.__dict__)
+                        valuesCompared[f"{value}{i}"] = [-1, -1]
                 else:
-                    ourValue = s.__dict__[value]
-                    theirValue = otherStatNode.__dict__[value]
-                    if theirValue == 0:
-                        theirValue = ourValue / -1
+                    try:
+                        ourValue = s.__dict__[value]
+                        theirValue = otherStatNode.__dict__[value]
                         if theirValue == 0:
-                            theirValue = -1
-                    valuesCompared[value] = [ourValue / theirValue, ourValue - theirValue]
+                            theirValue = ourValue / -1
+                            if theirValue == 0:
+                                theirValue = -1
+                        valuesCompared[value] = [ourValue / theirValue, ourValue - theirValue]
+                    except KeyError:
+                        valuesCompared[value] = [-1, -1]
         elif False:   
             relativeCounts = []
             differentialCount = {}
