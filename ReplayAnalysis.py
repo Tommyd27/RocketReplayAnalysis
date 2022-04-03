@@ -275,7 +275,8 @@ class StatNode:
                                     theirValue = -1
                             valuesCompared[f"{value}{i}"] = [ourValue / theirValue, ourValue - theirValue]    
                     except KeyError:
-                        valuesCompared[f"{value}{i}"] = [-1, -1]
+                        for i in range(3):
+                            valuesCompared[f"{value}{i}"] = [-1, -1]
                 else:
                     try:
                         ourValue = s.__dict__[value]
@@ -761,8 +762,8 @@ class ReplayAnalysis:
         #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
-        #self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
-        self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        #self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
         self.altdbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
         #self.altdbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
         #self.altdbFile = ":memory:"
@@ -914,7 +915,7 @@ class ReplayAnalysis:
         for i in range(len(ourStatNodes)):
             node = ourStatNodes[i]
             tNode = theirStatNodes[i]
-            comparedStatNodes.append(node.CompareAgainstStatNode(tNode))
+            comparedStatNodes.append([node, node.CompareAgainstStatNode(tNode)])
         return comparedStatNodes
     def ConvertIndexToPosition(s, position):
         return f"{ascii_uppercase[position[0] - 1]}{position[1]}"
@@ -1003,28 +1004,32 @@ class ReplayAnalysis:
                 raise e
 
         xlWorkbook.save(filePath)
-    def OutputPlayerHeadToHead(s, comparedStatNodes, ourPlayer, againstPlayer, startPosition = (1, 1), sheet = None, override = True):
+    def OutputPlayerHeadToHead(s, ourPlayer, againstPlayer, startPosition = (1, 1), sheet = None, override = True):
+        
         xlWorkbook = xl.load_workbook(s.filePath)
         if not sheet:
             xlSheet = xlWorkbook.active
         else:
             xlSheet = xlWorkbook[sheet]
-        allQuantativeComparisons = [x for x in comparedStatNodes if x.valueRangeType == 0]
+        allQuantativeComparisons = [x for x in comparedStatNodes if x[0].valueNode.valueRangeType == 0]
         dataToTable = {}
         for comparedNode in allQuantativeComparisons:
-            dataToTable[comparedNode.valueNode.n] = comparedNode.comparedAnalysis
+            dataToTable[comparedNode[0].name] = comparedNode[1]
         dataTable = s.GenerateTable(dataToTable)
-
         for y, row in enumerate(dataTable, 1):
             for x, value in enumerate(row, 1):
                 xlSheet[s.ConvertIndexToPosition((x, y))].value = value
+        xlWorkbook.save(s.filePath)
         #table = s .RecurseTable()
     def GenerateTable(s, dataToTable):
         firstKey = [x for x in dataToTable.keys()][0]
-        columns = ["name"] + dataToTable[firstKey].keys()
+        columns = ["name"] + list(dataToTable[firstKey].keys())
         data = []
-        for key, item in dataToTable:
-            data = [key] + [x for x in item.values()]
+        for key, item in dataToTable.items():
+            data.append([key] + [x for x in item.values()])
+        print(columns)
+        print()
+        print(data)
         return [columns] + data
     def RecurseTable(self, key, value, x, y):
         """example dict:
@@ -1054,6 +1059,4 @@ if __name__ == '__main__':
     replayEngine.LoadReplays(None, loadStatNodes = False)
     match, players = replayEngine.GetReplay(123, False)
     comparedStatNodes = replayEngine.TwoPlayerHistoricAnalysis(replayEngine.historicPlayers[0], replayEngine.historicPlayers[1])
-    replayEngine.OutputPlayerHeadToHead(comparedStatNodes)
-
-
+    replayEngine.OutputPlayerHeadToHead(comparedStatNodes, replayEngine.historicPlayers[0], replayEngine.historicPlayers[1])
