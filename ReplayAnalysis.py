@@ -1011,14 +1011,13 @@ class ReplayAnalysis:
             xlSheet = xlWorkbook.active
         else:
             xlSheet = xlWorkbook[sheet]
-        allQuantativeComparisons = [x for x in comparedStatNodes if x[0].valueNode.valueRangeType == 0]
-        dataToTable = {}
-        for comparedNode in allQuantativeComparisons:
-            dataToTable[comparedNode[0].name] = comparedNode[1]
-        dataTable = s.GenerateTable(dataToTable)
-        for y, row in enumerate(dataTable, 1):
-            for x, value in enumerate(row, 1):
-                xlSheet[s.ConvertIndexToPosition((x, y))].value = value
+        columns = ["Name", "Mean", "AgainstMean", "MeanRelative", "MeanDifferential", "LowerQuartile", "AgainstLowerQuartile", "LowerQuartileRelative", "LowerQuartileDifferential", "MedianQuartile", "AgainstMedianQuartile", "MedianQuartileRelative", "MedianQuartileDifferential", "UpperQuartile", "UpperMedianQuartile", "UpperQuartileRelative", "UpperQuartileDifferential", "Mode", "AgainstMode", "ModeRelative", "ModeDifferential", "StandardDeviation", "AgainstStandardDeviation", "StandardDeviationRelative", "StandardDeviationDifferential"]
+        i = -1
+        for statNode in ourPlayer.statNodes.values():
+            if statNode.valueNode.valueRangeType != 0:
+                continue
+            i += 1
+            xlSheet[s.ConvertIndexToPosition(startPosition[0] + i + 1, startPosition[1] + 1)]
         xlWorkbook.save(s.filePath)
         #table = s .RecurseTable()
     def GenerateTable(s, dataToTable):
