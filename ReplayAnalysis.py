@@ -758,12 +758,12 @@ class Cell:
         xlSheet[self.SelfToPosition()].value = self.v
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, args = None):
-        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
-        self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
-        #self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        #self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
         self.altdbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
         #self.altdbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
         #self.altdbFile = ":memory:"
@@ -917,7 +917,7 @@ class ReplayAnalysis:
             tNode = theirStatNodes[i]
             comparedStatNodes.append([node, node.CompareAgainstStatNode(tNode)])
         return comparedStatNodes
-    def ConvertIndexToPosition(s, position):
+    def pos(s, position):
         return f"{ascii_uppercase[position[0] - 1]}{position[1]}"
     def OneAgainstManyAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None, override = True):
         valueNColumns = ["n", "calculatedValue", "rawValue", "percentageOf"]
@@ -968,10 +968,10 @@ class ReplayAnalysis:
         additionalLength = 0
         for i, columnName in enumerate(allColumnsCombined):
             if not isinstance(columnName, tuple):
-                xlSheet[s.ConvertIndexToPosition((startPosition[0] + i + additionalLength, startPosition[1]))].value = columnName
+                xlSheet[s.pos((startPosition[0] + i + additionalLength, startPosition[1]))].value = columnName
             else:
                 for _ in range(columnName[1]):
-                    xlSheet[s.ConvertIndexToPosition((startPosition[0] + i + additionalLength, startPosition[1]))].value = str(columnName[0]) + str(_)
+                    xlSheet[s.pos((startPosition[0] + i + additionalLength, startPosition[1]))].value = str(columnName[0]) + str(_)
                     additionalLength += 1
                 additionalLength -= 1
         #print(combinedData)
@@ -980,17 +980,17 @@ class ReplayAnalysis:
             for x, dataPoint in enumerate(row):
                 if isinstance(dataPoint, (list, tuple)):
                     for singlePoint in dataPoint:
-                        xlSheet[s.ConvertIndexToPosition((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = singlePoint
+                        xlSheet[s.pos((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = singlePoint
                         additionalLength += 1
                     additionalLength -= 1
                 else:
                     try:
-                        xlSheet[s.ConvertIndexToPosition((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = dataPoint
+                        xlSheet[s.pos((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = dataPoint
                     except ValueError:
-                        xlSheet[s.ConvertIndexToPosition((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = dataPoint[0]
+                        xlSheet[s.pos((startPosition[0] + x + additionalLength, startPosition[1] + y + 1))].value = dataPoint[0]
         overallLength = len(valueNColumns) + len(analysisNColumns) + len(statNColumns) + sumAdditionalColumnLength - 1
         endPosition = (startPosition[0] + overallLength, startPosition[1] + len(analysisNodes))
-        table = Table(displayName = "OutputAnalysis", ref = f"{s.ConvertIndexToPosition(startPosition)}:{s.ConvertIndexToPosition(endPosition)}")
+        table = Table(displayName = "OutputAnalysis", ref = f"{s.pos(startPosition)}:{s.pos(endPosition)}")
         style = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
                        showLastColumn=False, showRowStripes=True, showColumnStripes=True)
         table.tableStyleInfo = style
@@ -1004,7 +1004,7 @@ class ReplayAnalysis:
                 raise e
 
         xlWorkbook.save(filePath)
-    def OutputPlayerHeadToHead(s, ourPlayer, againstPlayer, startPosition = (1, 1), sheet = None, override = True):
+    def OutputPlayerHeadToHead(s, ourPlayer, againstPlayer, sPos = (1, 1), sheet = None, override = True):
         
         xlWorkbook = xl.load_workbook(s.filePath)
         if not sheet:
@@ -1012,12 +1012,43 @@ class ReplayAnalysis:
         else:
             xlSheet = xlWorkbook[sheet]
         columns = ["Name", "Mean", "AgainstMean", "MeanRelative", "MeanDifferential", "LowerQuartile", "AgainstLowerQuartile", "LowerQuartileRelative", "LowerQuartileDifferential", "MedianQuartile", "AgainstMedianQuartile", "MedianQuartileRelative", "MedianQuartileDifferential", "UpperQuartile", "UpperMedianQuartile", "UpperQuartileRelative", "UpperQuartileDifferential", "Mode", "AgainstMode", "ModeRelative", "ModeDifferential", "StandardDeviation", "AgainstStandardDeviation", "StandardDeviationRelative", "StandardDeviationDifferential"]
-        i = -1
+        columnIDs = ["mean", ("quartiles", 0), ("quartiles", 1), ("quartiles", 3), "mode", "standardDeviation"]
+        for p, column in enumerate(columns):
+            xlSheet[s.pos((sPos[0] + p, sPos[1]))].value = column
+        i = 0
         for statNode in ourPlayer.statNodes.values():
             if statNode.valueNode.valueRangeType != 0:
                 continue
             i += 1
-            xlSheet[s.ConvertIndexToPosition(startPosition[0] + i + 1, startPosition[1] + 1)]
+            name = statNode.name
+            j = 0
+            for column in enumerate(columnIDs):
+                if isinstance(column, tuple):
+                    try:
+                        ourValue = statNode.__dict__[column[0]][column[1]]
+                    except ZeroDivisionError:#(KeyError, IndexError):
+                        ourValue = -1
+                    try:
+                        theirValue = againstPlayer.statNodes[name].__dict__[column[0]][column[1]] 
+                    except ZeroDivisionError:#(KeyError, IndexError):
+                        theirValue = -1
+                else:
+                    try:
+                        ourValue = statNode.__dict__[column]
+                    except ZeroDivisionError:#KeyError:
+                        ourValue = -1
+                    try:    
+                        theirValue = againstPlayer.statNodes[name].__dict__[column]
+                    except ZeroDivisionError:#KeyError:
+                        theirValue = -1
+                xlSheet[s.pos((sPos[0] + j, sPos[1] + i))].value = ourValue
+                xlSheet[s.pos((sPos[0] + j + 1, sPos[1] + i))].value = theirValue
+                try:
+                    xlSheet[s.pos((sPos[0] + j + 2, sPos[1] + i))].value = ourValue / theirValue
+                except ZeroDivisionError:
+                    xlSheet[s.pos((sPos[0], j + 2, sPos[1] + i))].value = "n/a"
+                xlSheet[s.pos((sPos[0] + j + 3, sPos[1] + i))].value = ourValue - theirValue
+                j += 4
         xlWorkbook.save(s.filePath)
         #table = s .RecurseTable()
     def GenerateTable(s, dataToTable):
@@ -1058,4 +1089,4 @@ if __name__ == '__main__':
     replayEngine.LoadReplays(None, loadStatNodes = False)
     match, players = replayEngine.GetReplay(123, False)
     comparedStatNodes = replayEngine.TwoPlayerHistoricAnalysis(replayEngine.historicPlayers[0], replayEngine.historicPlayers[1])
-    replayEngine.OutputPlayerHeadToHead(comparedStatNodes, replayEngine.historicPlayers[0], replayEngine.historicPlayers[1])
+    replayEngine.OutputPlayerHeadToHead(replayEngine.historicPlayers[0], replayEngine.historicPlayers[1])
