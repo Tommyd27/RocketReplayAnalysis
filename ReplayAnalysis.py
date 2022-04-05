@@ -758,12 +758,12 @@ class Cell:
         xlSheet[self.SelfToPosition()].value = self.v
 class ReplayAnalysis:
     def __init__(self, loadReplays = True, args = None):
-        #self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-        self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+        self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+        #self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
         self.CreateConnection(self.dbFile)
         self.replays = []
-        #self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
-        self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+        #self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
         self.altdbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
         #self.altdbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
         #self.altdbFile = ":memory:"
@@ -1012,7 +1012,7 @@ class ReplayAnalysis:
         else:
             xlSheet = xlWorkbook[sheet]
         columns = ["Name", "Mean", "AgainstMean", "MeanRelative", "MeanDifferential", "LowerQuartile", "AgainstLowerQuartile", "LowerQuartileRelative", "LowerQuartileDifferential", "MedianQuartile", "AgainstMedianQuartile", "MedianQuartileRelative", "MedianQuartileDifferential", "UpperQuartile", "UpperMedianQuartile", "UpperQuartileRelative", "UpperQuartileDifferential", "Mode", "AgainstMode", "ModeRelative", "ModeDifferential", "StandardDeviation", "AgainstStandardDeviation", "StandardDeviationRelative", "StandardDeviationDifferential"]
-        columnIDs = ["mean", ("quartiles", 0), ("quartiles", 1), ("quartiles", 3), "mode", "standardDeviation"]
+        columnIDs = ["mean", ("quartiles", 0), ("quartiles", 1), ("quartiles", 2), "mode", "standardDeviation"]
         for p, column in enumerate(columns):
             xlSheet[s.pos((sPos[0] + p, sPos[1]))].value = column
         i = 0
@@ -1021,25 +1021,29 @@ class ReplayAnalysis:
                 continue
             i += 1
             name = statNode.name
-            j = 0
-            for column in enumerate(columnIDs):
+            xlSheet[s.pos((sPos[0], sPos[1] + i))].value = name
+            j = 1
+            for column in columnIDs:
                 if isinstance(column, tuple):
                     try:
                         ourValue = statNode.__dict__[column[0]][column[1]]
-                    except ZeroDivisionError:#(KeyError, IndexError):
+                    #except IndexError as e:
+                    #    print(statNode.__dict__[column[0]])
+                    #    raise e
+                    except KeyError:#, IndexError):
                         ourValue = -1
                     try:
                         theirValue = againstPlayer.statNodes[name].__dict__[column[0]][column[1]] 
-                    except ZeroDivisionError:#(KeyError, IndexError):
+                    except KeyError:#, IndexError):
                         theirValue = -1
                 else:
                     try:
                         ourValue = statNode.__dict__[column]
-                    except ZeroDivisionError:#KeyError:
+                    except KeyError:
                         ourValue = -1
                     try:    
                         theirValue = againstPlayer.statNodes[name].__dict__[column]
-                    except ZeroDivisionError:#KeyError:
+                    except KeyError:
                         theirValue = -1
                 xlSheet[s.pos((sPos[0] + j, sPos[1] + i))].value = ourValue
                 xlSheet[s.pos((sPos[0] + j + 1, sPos[1] + i))].value = theirValue
