@@ -758,12 +758,12 @@ class Cell:
 		xlSheet[self.SelfToPosition()].value = self.v
 class ReplayAnalysis:
 	def __init__(self, loadReplays = True, args = None):
-		#self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
-		self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
+		self.dbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\replayDatabase.db"
+		#self.dbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\replayDatabase.db"
 		self.CreateConnection(self.dbFile)
 		self.replays = []
-		#self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
-		self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+		self.filePath = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
+		#self.filePath = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisExcelConnection.xlsx"
 		self.altdbFile = r"D:\Users\tom\Documents\Programming Work\Python\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
 		#self.altdbFile = r"d:\Users\tom\Documents\Visual Studio Code\Python Files\RocketReplayAnalysis\RocketReplayAnalysis\Database\analysisOutputDatabase.db"
 		#self.altdbFile = ":memory:"
@@ -1066,11 +1066,44 @@ class ReplayAnalysis:
 			else:
 				raise e
 
-		sPos2 = (sPos[0] + j + 1, sPos[1] + i + 1)
+		sPos2 = (sPos[0] + j + 1, sPos[1])
+		y = 1
+
+
+		xlSheet[s.pos(sPos2)].value = "Name"
+		xlSheet[s.pos((sPos2[0] + 1, sPos2[1]))].value = "Value"
+		xlSheet[s.pos((sPos2[0] + 2, sPos2[1]))].value = "OurCount"
+		xlSheet[s.pos((sPos2[0] + 3, sPos2[1]))].value = "TheirCount"
+		xlSheet[s.pos((sPos2[0] + 4, sPos2[1]))].value = "Differential"
 		for statNode in ourPlayer.statNodes.values():
 			if statNode.valueNode.valueRangeType == 0:
 				continue
-			
+			valuesDisplayed = []
+			name = statNode.name
+			for value in statNode.valueCounter:
+				xlSheet[s.pos((sPos2[0], sPos2[1] + y))].value = name
+				xlSheet[s.pos((sPos2[0] + 1, sPos2[1] + y))].value = value
+				ourValue = statNode.valueCounter[value]
+				xlSheet[s.pos((sPos2[0] + 2, sPos2[1] + y))].value = ourValue
+				try:
+					theirValue = againstPlayer.statNodes[name].valueCounter[value]
+				except KeyError:
+					theirValue = 0
+				xlSheet[s.pos((sPos2[0] + 3, sPos2[1] + y))].value = theirValue
+				xlSheet[s.pos((sPos2[0] + 4, sPos2[1] + y))].value = ourValue - theirValue
+				valuesDisplayed.append(value)
+				y += 1
+			for value in againstPlayer.statNodes[name].valueCounter:
+				if value in valuesDisplayed:
+					continue
+				xlSheet[s.pos((sPos2[0], sPos2[1] + y))].value = name
+				xlSheet[s.pos((sPos2[0] + 1, sPos2[1] + y))].value = value
+				ourValue = 0
+				xlSheet[s.pos((sPos2[0] + 2, sPos2[1] + y))].value = ourValue
+				theirValue = againstPlayer.statNodes[name].valueCounter[value]
+				xlSheet[s.pos((sPos2[0] + 3, sPos2[1] + y))].value = theirValue
+				xlSheet[s.pos((sPos2[0] + 4, sPos2[1] + y))].value = ourValue - theirValue
+				y += 1
 
 
 		xlWorkbook.save(s.filePath)
