@@ -5,6 +5,7 @@ from collections import Counter
 from os import remove
 import openpyxl as xl
 from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.utils import get_column_letter
 
 def RoundToX(num, base):
 	return base * round(num / base)
@@ -197,7 +198,7 @@ class StatNode:
 			self.CalculateStats()
 		else:
 			print("Zero Values for Stat")
-			self.mean, self.mode = -1, -1
+			self.mean, self.mode, self.valuesCounter = -1, -1, []
 	def CalculateStats(self):
 		self.values.sort()
 		if self.valueNode.valueRangeType == 0:
@@ -548,7 +549,7 @@ class HistoricalNode:
 		else:
 			print("cunt")
 class Player:
-	def __init__(self, playerList, matchList):
+	def __init__(self, playerList, matchList, smallestPlayerID = False):
 		self.pList = playerList
 		self.mL = matchList
 
@@ -561,7 +562,9 @@ class Player:
 				if node.c == True:
 					if node.n == "scoredFirst":
 						try:
-							calcVariables = [playerList[0] == matchList[11][0]]
+							if not smallestPlayerID:
+								raise TypeError("No Player ID :(")
+							calcVariables = [playerList[0] - smallestPlayerID == int(matchList[11][0])]
 						except (TypeError, IndexError):
 							calcVariables = [-1]
 					else:
@@ -836,8 +839,16 @@ class ReplayAnalysis:
 		self.matches = [Match(x) for x in matchLists]
 		self.matchesDict = {x.mL[0] : x for x in self.matches}
 		self.players = []
+		smallestPlayerID = {}
+
 		for player in playerLists:
-			self.players.append(Player(player, self.matchesDict[player[-1]].mL))
+			matchID = player[-1]
+			try:
+				smallestPlayerIDVal = smallestPlayerID[matchID]
+			except KeyError:
+				smallestPlayerIDVal = player[0]
+				smallestPlayerID[matchID] = smallestPlayerIDVal
+			self.players.append(Player(player, self.matchesDict[player[-1]].mL, smallestPlayerIDVal))
 		self.teamsD = {}
 		self.statNodes = []
 
@@ -918,7 +929,7 @@ class ReplayAnalysis:
 			comparedStatNodes.append([node, node.CompareAgainstStatNode(tNode)])
 		return comparedStatNodes
 	def pos(s, position):
-		return f"{ascii_uppercase[position[0] - 1]}{position[1]}"
+		return f"{get_column_letter(position[0])}{position[1]}"
 	def OneAgainstManyAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None, override = True):
 		valueNColumns = ["n", "calculatedValue", "rawValue", "percentageOf"]
 		analysisNColumns = [("valueIndex", 2), "againstAverage", "againstMedian", "sDAway", ("valueRarity", 2), "relevancy", "calculatedRelevancy", "absRelevancy", "rBreak"]
@@ -1074,37 +1085,66 @@ class ReplayAnalysis:
 		xlSheet[s.pos((sPos2[0] + 1, sPos2[1]))].value = "Value"
 		xlSheet[s.pos((sPos2[0] + 2, sPos2[1]))].value = "OurCount"
 		xlSheet[s.pos((sPos2[0] + 3, sPos2[1]))].value = "TheirCount"
-		xlSheet[s.pos((sPos2[0] + 4, sPos2[1]))].value = "Differential"
+		xlSheet[s.pos((sPos2[0] + 4, sPos2[1]))].value = "OurSum"
+		xlSheet[s.pos((sPos2[0] + 5, sPos2[1]))].value = "TheirSum"
+		xlSheet[s.pos((sPos2[0] + 6, sPos2[1]))].value = "OurCount%"
+		xlSheet[s.pos((sPos2[0] + 7, sPos2[1]))].value = "TheirCount%"
+		xlSheet[s.pos((sPos2[0] + 8, sPos2[1]))].value = "Differential"
 		for statNode in ourPlayer.statNodes.values():
 			if statNode.valueNode.valueRangeType == 0:
 				continue
+			nodeSum = sum(list(statNode.valuesCounter.values()))
+			
 			valuesDisplayed = []
 			name = statNode.name
-			for value in statNode.valueCounter:
+			try:
+				theirNodeSum = sum(list(againstPlayer.statNodes[name].valuesCounter.values()))
+			except KeyError:
+				theirNodeSum = 0
+			for value in statNode.valuesCounter:
 				xlSheet[s.pos((sPos2[0], sPos2[1] + y))].value = name
 				xlSheet[s.pos((sPos2[0] + 1, sPos2[1] + y))].value = value
-				ourValue = statNode.valueCounter[value]
+				ourValue = statNode.valuesCounter[value]
 				xlSheet[s.pos((sPos2[0] + 2, sPos2[1] + y))].value = ourValue
 				try:
-					theirValue = againstPlayer.statNodes[name].valueCounter[value]
+					theirValue = againstPlayer.statNodes[name].valuesCounter[value]
 				except KeyError:
 					theirValue = 0
 				xlSheet[s.pos((sPos2[0] + 3, sPos2[1] + y))].value = theirValue
-				xlSheet[s.pos((sPos2[0] + 4, sPos2[1] + y))].value = ourValue - theirValue
+				xlSheet[s.pos((sPos2[0] + 4, sPos2[1] + y))].value = nodeSum
+				xlSheet[s.pos((sPos2[0] + 5, sPos2[1] + y))].value = theirNodeSum
+				xlSheet[s.pos((sPos2[0] + 6, sPos2[1] + y))].value = ourValue / nodeSum
+				xlSheet[s.pos((sPos2[0] + 7, sPos2[1] + y))].value = theirValue / theirNodeSum
+				xlSheet[s.pos((sPos2[0] + 8, sPos2[1] + y))].value = (ourValue / nodeSum) - (theirValue / theirNodeSum)
 				valuesDisplayed.append(value)
 				y += 1
-			for value in againstPlayer.statNodes[name].valueCounter:
+			for value in againstPlayer.statNodes[name].valuesCounter:
 				if value in valuesDisplayed:
 					continue
+				ourValue = 0
+				theirValue = againstPlayer.statNodes[name].valuesCounter[value]
 				xlSheet[s.pos((sPos2[0], sPos2[1] + y))].value = name
 				xlSheet[s.pos((sPos2[0] + 1, sPos2[1] + y))].value = value
-				ourValue = 0
 				xlSheet[s.pos((sPos2[0] + 2, sPos2[1] + y))].value = ourValue
-				theirValue = againstPlayer.statNodes[name].valueCounter[value]
 				xlSheet[s.pos((sPos2[0] + 3, sPos2[1] + y))].value = theirValue
-				xlSheet[s.pos((sPos2[0] + 4, sPos2[1] + y))].value = ourValue - theirValue
+				xlSheet[s.pos((sPos2[0] + 4, sPos2[1] + y))].value = nodeSum
+				xlSheet[s.pos((sPos2[0] + 5, sPos2[1] + y))].value = theirNodeSum
+				xlSheet[s.pos((sPos2[0] + 6, sPos2[1] + y))].value = 0
+				xlSheet[s.pos((sPos2[0] + 7, sPos2[1] + y))].value = theirValue / theirNodeSum
+				xlSheet[s.pos((sPos2[0] + 8, sPos2[1] + y))].value = 0 - (theirValue / theirNodeSum)
 				y += 1
-
+		table2 = Table(displayName = "OutputAnalysis2", ref = f"{s.pos(sPos2)}:{s.pos((sPos2[0] + 8, sPos2[1] + y - 1))}")
+		style2 = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
+					   showLastColumn=False, showRowStripes=True, showColumnStripes=True)
+		table2.tableStyleInfo = style2
+		try:
+			xlSheet.add_table(table2)
+		except ValueError as e:
+			if override:
+				del xlSheet.tables["OutputAnalysis2"]
+				xlSheet.add_table(table2)
+			else:
+				raise e
 
 		xlWorkbook.save(s.filePath)
 		#table = s .RecurseTable()
