@@ -1147,7 +1147,6 @@ class ReplayAnalysis:
 				raise e
 
 		xlWorkbook.save(s.filePath)
-		#table = s .RecurseTable()
 	def GenerateTable(s, dataToTable):
 		firstKey = [x for x in dataToTable.keys()][0]
 		columns = ["name"] + list(dataToTable[firstKey].keys())
