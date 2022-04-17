@@ -4,6 +4,7 @@ from string import ascii_letters, ascii_uppercase
 from collections import Counter
 from os import remove
 import openpyxl as xl
+import openpyxl
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.utils import get_column_letter
 
@@ -22,7 +23,6 @@ def CalculateMedian(values, medianType = 0.5, sort = True):
 			return (values[midValue] + values[midValue + 1]) / 2
 	except IndexError as e:
 		if lenValues <= 2:
-			print("not enough values for median")
 			return -1
 		else:
 			return values[int(medianType * 4) - 1]     
@@ -98,9 +98,7 @@ punishDuplicatesAvg = {"default" : 0.2}
 statNodes = {}
 percentageAccountValues = {"default" : [0.7, 0.2]}
 
-
 tagsDictionary = {}
- 
 class ValueNode:
 	def __init__(self, name, percentage = False, calculation = False, teamStat = True, default = -1, valueType = "Player", valueRangeType = 0, tag = None) -> None:
 		"""Name: Name of Node
@@ -154,8 +152,6 @@ class ValueNode:
 		node.percentageOf = percentageOf
 		node.calculationValues = calculationValues
 		node.individualPlayers = individualPlayers
-
-
 		if node.rawValue in [None, "NaN", -1]:
 			node.calculatedValue = s.default
 			return node
@@ -174,14 +170,23 @@ class ValueNode:
 						calculationString = calculationString.replace("@", str(cValue), 1)
 					cachedValue = eval(calculationString)
 			node.rawValue = cachedValue
-		if node.p and not teamCalculation and calculationValues:
-			if percentageOf and -1 not in percentageOf:
-				if sum(percentageOf) == 0:
-					cachedValue /= 1
+		if (node.p) and (not teamCalculation) and (percentageOf != False):
+			
+			try:
+				if (percentageOf) and (not -1 in percentageOf):
+					if sum(percentageOf) == 0:
+						cachedValue /= 1
+					else:
+						cachedValue /= sum(percentageOf)
 				else:
-					cachedValue /= sum(percentageOf)
-			else:
-				cachedValue = -1
+					cachedValue = -1
+			except TypeError as e:
+				print(node.n)
+				print(node.p)
+				print(percentageOf)
+				print(type(percentageOf))
+				raise e
+			
 		node.calculatedValue = cachedValue
 		return node
 class StatNode:
@@ -197,7 +202,6 @@ class StatNode:
 		if self.numValues > 0:
 			self.CalculateStats()
 		else:
-			print("Zero Values for Stat")
 			self.mean, self.mode, self.valuesCounter = -1, -1, []
 	def CalculateStats(self):
 		self.values.sort()
@@ -233,6 +237,8 @@ class StatNode:
 			self.mean = self.mode
 			self.valuesCounter = counterValues
 			self.groupedValuesCounter = counterValues
+			self.sortedValues = [(x, y) for x, y in counterValues.items()]
+			self.sortedValues.sort(reverse = True, key = lambda x : x[1])
 	def OutputValuesStr(s):
 		output = "\n"
 		
@@ -426,10 +432,9 @@ valueNodes = {"Match" : [ValueNode('overtime', valueType = "Match"),
 					ValueNode('numGoBall'),
 					ValueNode('numFirstTouch'),
 					ValueNode('aBoostUsed'),
-					ValueNode('fiftyWins'),
-					ValueNode('fiftyLosses'),
-					ValueNode('fiftyDraws'),
-					ValueNode("fiftyWinRate", percentage = "totalFifties"),
+					ValueNode('fiftyWins', percentage = "totalFifties"),
+					ValueNode('fiftyLosses', percentage = "totalFifties"),
+					ValueNode('fiftyDraws', percentage = "totalFifties"),
 					ValueNode("fiftyNotLossRate", percentage = "totalFifties", calculation = ["@ + @", "fiftyWins", "fiftyDraws"]),
 					ValueNode('goalParticipation', percentage = "teamGoals", calculation = ["@ + @", "goals", "assists"]),
 					ValueNode('scoredFirst', calculation = True, valueRangeType = 1)],
@@ -599,19 +604,24 @@ class Player:
 						divValue = -1
 					divValues.append(divValue)
 			else:
-				divValues = None       
-			self.valueNodes[node.n] = node.GiveValue(rawValue, None, calcVariables)
+				divValues = None   
+			if node.n == "fiftyWinRate" and False:
+				print(rawValue)
+			self.valueNodes[node.n] = node.GiveValue(rawValue, False, calcVariables)
 			if node.p:
+				if node.n == "fiftyWinRate" and False:
+					print(rawValue)
 				self.valueNodes[f"{node.n}%{node.p}"] = node.GiveValue(rawValue, divValues, calcVariables, gName = f"{node.n}%{node.p}")
 class PlayerHistoric(Player):
 	countForHistoric = 3
 	def __init__(s, players, intensiveStats = True):
+		s.name =  players[0].pList[3]
 		s.players = players
 		s.statNodes = {}
 		s.numAppearances = len(players)
 		s.iS = intensiveStats
 		s.id = players[0].pList[1]
-		for stat in valueNodes["Player"].values():
+		for stat in players[0].valueNodes.values():
 			statList = [x.valueNodes[stat.n].calculatedValue for x in players]
 			s.statNodes[stat.n] = StatNode(stat, statList)
 		if intensiveStats:
@@ -680,6 +690,37 @@ class PlayerHistoric(Player):
 		if len(playerAppearances) > PlayerHistoric.countForHistoric:
 			return PlayerHistoric(playerAppearances)
 		return False
+	def ConvToRowStr(s):
+		row = ["name", "id", "num appearances"]
+		for statNode in s.statNodes.values():
+			name = statNode.name
+			if statNode.valueNode.valueRangeType == 0:
+				addToRow = ["mean", "lower quartile", "median", "upper quartile", "standard deviation", "grouped mode"]
+			else:
+				addToRow = ["most common value", "most common value count", "second most common value", "second most common value count"]
+			addToRow = [f"{name} {x}" for x in addToRow]
+			row += addToRow
+		return row
+	def ConvToRow(s):
+		"""name, id, appearances"""
+		"""node type 0: mean, quartiles, standard deviation, grouped mode"""
+		"""node type else: mode, secondMode"""
+		row = [s.name, s.id, s.numAppearances]
+		for statNode in s.statNodes.values():
+			statNode : StatNode
+			if statNode.valueNode.valueRangeType == 0:
+				if statNode.mean != -1:
+					addToRow = [statNode.mean, statNode.quartiles[0], statNode.quartiles[1], statNode.quartiles[2], statNode.standardDeviation, statNode.groupedMode]
+				else:
+					addToRow = [-1, -1, -1, -1, -1, -1]
+				
+			else:
+				try:
+					addToRow = [statNode.sortedValues[0][0], statNode.sortedValues[0][1], statNode.sortedValues[1][0], statNode.sortedValues[1][1]]
+				except (AttributeError, IndexError):
+					addToRow = [-1, -1, -1, -1]
+			row += addToRow
+		return row
 class Team:
 	def __init__(self, players, matchList) -> None:
 		self.players = players
@@ -740,7 +781,7 @@ class Match:
 		for node in valueNodes["Match"].values():
 			rawValue = matchList[node.i]
 			if node.p:
-				divValue = matchList[retrievalNodes["Match"].index(node.p)]
+				divValue = [matchList[retrievalNodes["Match"].index(node.p)]]
 			else:
 				divValue = None
 			self.valueNodes[node.n] = node.GiveValue(rawValue, divValue)
@@ -773,6 +814,8 @@ class ReplayAnalysis:
 		self.altConn = False
 		if loadReplays:
 			self.LoadReplays(args)
+		self.workBook = xl.load_workbook(self.filePath)
+		self.sheet = self.workBook.active
 	def CreateConnection(self, dbFile):
 		print(f"Connected to {dbFile}")
 		self.conn = sqlite3.connect(dbFile)
@@ -1147,16 +1190,28 @@ class ReplayAnalysis:
 				raise e
 
 		xlWorkbook.save(s.filePath)
-	def GenerateTable(s, dataToTable):
-		firstKey = [x for x in dataToTable.keys()][0]
-		columns = ["name"] + list(dataToTable[firstKey].keys())
-		data = []
-		for key, item in dataToTable.items():
-			data.append([key] + [x for x in item.values()])
-		print(columns)
-		print()
-		print(data)
-		return [columns] + data
+	def GeneratePlayerHistoricTable(s, playerHistorics, sPos = (1, 1)):
+		data = [playerHistorics[0].ConvToRowStr()] + [x.ConvToRow() for x in playerHistorics]
+		y = 0
+		sheet = s.sheet
+		#print(data)
+		#raise ValueError()
+		for row in data:
+			for x, val in enumerate(row):
+				sheet[s.pos((sPos[0] + x, sPos[1] + y))].value = val
+			y += 1
+		#
+
+		table = Table(displayName = "HistoricPlayerTable", ref = f"{s.pos(sPos)}:{s.pos((sPos[0] + len(data[0]) - 1, sPos[1] + y - 1))}")
+		style = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
+					   showLastColumn=False, showRowStripes=True, showColumnStripes=True)
+		table.tableStyleInfo = style
+		try:
+			sheet.add_table(table)
+		except ValueError:
+			del sheet.tables["HistoricPlayerTable"]
+			sheet.add_table(table)
+		s.workBook.save(s.filePath)
 	def RecurseTable(self, key, value, x, y):
 		"""example dict:
 		
@@ -1183,6 +1238,5 @@ class ReplayAnalysis:
 if __name__ == '__main__':
 	replayEngine = ReplayAnalysis(False)
 	replayEngine.LoadReplays(None, loadStatNodes = False)
-	match, players = replayEngine.GetReplay(123, False)
-	comparedStatNodes = replayEngine.TwoPlayerHistoricAnalysis(replayEngine.historicPlayers[0], replayEngine.historicPlayers[1])
-	replayEngine.OutputPlayerHeadToHead(replayEngine.historicPlayers[0], replayEngine.historicPlayers[1])
+	replayEngine.GeneratePlayerHistoricTable(replayEngine.historicPlayers[:10])
+	
