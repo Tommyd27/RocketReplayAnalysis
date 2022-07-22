@@ -814,7 +814,7 @@ class ReplayAnalysis:
 		self.altConn = False
 		if loadReplays:
 			self.LoadReplays(args)
-		self.workBook = xl.load_workbook(self.filePath)
+		#self.workBook = xl.load_workbook(self.filePath)
 		self.sheet = self.workBook.active
 	def CreateConnection(self, dbFile):
 		print(f"Connected to {dbFile}")
@@ -1014,7 +1014,7 @@ class ReplayAnalysis:
 					else:
 						rowToAdd.append(-1)
 			combinedData.append(rowToAdd)
-		xlWorkbook = xl.load_workbook(s.filePath)
+		#xlWorkbook = xl.load_workbook(s.filePath)
 		if not sheet:
 			xlSheet = xlWorkbook.active
 		else:
