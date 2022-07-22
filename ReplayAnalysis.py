@@ -3,10 +3,10 @@ import sqlite3
 from string import ascii_letters, ascii_uppercase
 from collections import Counter
 from os import remove
-import openpyxl as xl
-import openpyxl
-from openpyxl.worksheet.table import Table, TableStyleInfo
-from openpyxl.utils import get_column_letter
+#import openpyxl as xl
+#import openpyxl
+#from openpyxl.worksheet.table import Table, TableStyleInfo
+#from openpyxl.utils import get_column_letter
 
 def RoundToX(num, base):
 	return base * round(num / base)

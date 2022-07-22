@@ -113,6 +113,7 @@ class RRALink:
             s.PlaceCell(cell, match, iC, player)
 project = RRAProject(None, [Cell(1, -1, "matchID"),
                             Cell(2, -1, "playerID", location = "Player"),
-                            Cell(3, -1, "pName", location = "Player")], [], 0, iteratePlayers = True, ignorePlayers = ["76561198142849050"], name = "BigBird")
+                            Cell(3, -1, "pName", location = "Player")], [], 1, iteratePlayers = True, #ignorePlayers = ["76561198142849050"]
+							name = "PlayerAnalysis")
 link = RRALink(True)
 link.PerformProject(project)
