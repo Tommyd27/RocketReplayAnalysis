@@ -879,7 +879,7 @@ def main(replayFolder = r"C:\\Users\\tom\\AppData\\Roaming\\bakkesmod\\bakkesmod
 			sleep(0.5)
 
 	latestReplay = GetLatestReplay(replayFolder)
-	old = False
+	old = True
 	EURCgroupFolder = "E:\Rocket League Replays\EURC Replay Group\playoffs-ere0ruomml"
 	while True:
 		if old:
@@ -927,7 +927,8 @@ continueThruError = True
 pauseOnError = True
 
 
-tags = ["EURC2022"]
+#tags = ["EURC2022"]
+tags = []
 print(f"Running with Tags: {tags}")
 while True:
 	try:

@@ -3,10 +3,7 @@ import sqlite3
 from string import ascii_letters, ascii_uppercase
 from collections import Counter
 from os import remove
-#import openpyxl as xl
-#import openpyxl
-#from openpyxl.worksheet.table import Table, TableStyleInfo
-#from openpyxl.utils import get_column_letter
+
 
 def RoundToX(num, base):
 	return base * round(num / base)
@@ -973,7 +970,7 @@ class ReplayAnalysis:
 		return comparedStatNodes
 	def pos(s, position):
 		return f"{get_column_letter(position[0])}{position[1]}"
-	def OneAgainstManyAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None, override = True):
+	def _OneAgainstManyAnalysisExcel(s, analysisNodes, analysedAgainst, startPosition = (1, 1), sheet = None, override = True):
 		valueNColumns = ["n", "calculatedValue", "rawValue", "percentageOf"]
 		analysisNColumns = [("valueIndex", 2), "againstAverage", "againstMedian", "sDAway", ("valueRarity", 2), "relevancy", "calculatedRelevancy", "absRelevancy", "rBreak"]
 		statNColumns = ["mean", ("quartiles", 3), "mode", "standardDeviation", "groupedMode"]
@@ -1014,7 +1011,7 @@ class ReplayAnalysis:
 					else:
 						rowToAdd.append(-1)
 			combinedData.append(rowToAdd)
-		#xlWorkbook = xl.load_workbook(s.filePath)
+		xlWorkbook = xl.load_workbook(s.filePath)
 		if not sheet:
 			xlSheet = xlWorkbook.active
 		else:
@@ -1058,7 +1055,7 @@ class ReplayAnalysis:
 				raise e
 
 		xlWorkbook.save(filePath)
-	def OutputPlayerHeadToHead(s, ourPlayer, againstPlayer, sPos = (1, 1), sheet = None, override = True):
+	def _OutputPlayerHeadToHead(s, ourPlayer, againstPlayer, sPos = (1, 1), sheet = None, override = True):
 		
 		xlWorkbook = xl.load_workbook(s.filePath)
 		if not sheet:
@@ -1190,7 +1187,7 @@ class ReplayAnalysis:
 				raise e
 
 		xlWorkbook.save(s.filePath)
-	def GeneratePlayerHistoricTable(s, playerHistorics, sPos = (1, 1)):
+	def _GeneratePlayerHistoricTable(s, playerHistorics, sPos = (1, 1)):
 		data = [playerHistorics[0].ConvToRowStr()] + [x.ConvToRow() for x in playerHistorics]
 		y = 0
 		sheet = s.sheet
@@ -1212,7 +1209,7 @@ class ReplayAnalysis:
 			del sheet.tables["HistoricPlayerTable"]
 			sheet.add_table(table)
 		s.workBook.save(s.filePath)
-	def RecurseTable(self, key, value, x, y):
+	def _RecurseTable(self, key, value, x, y):
 		"""example dict:
 		
 		dict = {"key1" : value1,
@@ -1236,7 +1233,10 @@ class ReplayAnalysis:
 		x += 1
 		return x, y, outputValues
 if __name__ == '__main__':
+	import openpyxl as xl
+	import openpyxl
+	from openpyxl.worksheet.table import Table, TableStyleInfo
+	from openpyxl.utils import get_column_letter
 	replayEngine = ReplayAnalysis(False)
 	replayEngine.LoadReplays(None, loadStatNodes = False)
-	replayEngine.GeneratePlayerHistoricTable(replayEngine.historicPlayers[:10])
 	

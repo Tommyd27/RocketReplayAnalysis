@@ -1,6 +1,6 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from ReplayAnalysis import Player, Team, Match
+from ReplayAnalysis import Player, Team, Match, allNodes
 import sqlite3
 from time import sleep
 
@@ -29,7 +29,7 @@ class RRAProject:
         if sheet:
             self.s = sheet
         else:
-            self.s = "Rocket League Replay Analysis"
+            self.s = "Rocket League Analysis"
         self.c = cells
         locations = [x.l for x in cells]
         self.rPl = "Player" in locations
@@ -93,9 +93,9 @@ class RRALink:
     def PlaceCell(s, cell, match, iC, player = []):
         try:
             if cell.l == "Match":
-                value = match[Match.allNodes.index(cell.n)]
+                value = match[allNodes["Match"].index(cell.n)]
             else:
-                value = player[Player.allNodes.index(cell.n)]
+                value = player[allNodes["Player"].index(cell.n)]
             if cell.y == -1:
                 y = len(s.Sheets.p.col_values(iC)) + (1 if cell.x == iC else 0)
             else:
